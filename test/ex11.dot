@@ -1,16 +1,9 @@
 # vi:syntax=python
 # 66
-int main() {
-    int x = 19;
+main := () ->
+{
+    x := 10
 
-    if ( x < 5 )
-    {
-        return 67;
-    }
-    else 
-    {
-        return 66;
-    }
-
-    return 75;
+    (x<5) return 67
+    return 66
 }
