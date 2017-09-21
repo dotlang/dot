@@ -2,106 +2,103 @@
 #include <string.h>
 #include "re.h"
 
-enum TOKEN_ID
+//represents a binding:
+//example 1: x := 12
+//example 2: f := () -> 19.1
+//example 3: g := (x:int) -> x*2
+typedef struct 
 {
-    UNKNOWN,
-    WHITESPACE,
-    ARROW,
-    BIND,
-    LEFT_PAREN,
-    RIGHT_PAREN,
-    NUMBER,
-    IDENTIFIER
-};
+    char name[32];      //whatever comes before :=
+    char body_raw[256]; //whatever comes after :=
+} Binding;
 
-typedef struct
+//first phase: lex-read-binding-name
+
+//ignores rest of the current line in the file. Returns 1 if file is finished
+char ignoreLine(FILE* file)
 {
-    char pattern[32];
-    re_t compiled_pattern;
-    int token_type;
-} TokenSpec;
+    char temp = '#';
+    while ( temp != EOF && temp != '\n' ) temp = (char)fgetc(file);
+    ungetc(temp, file);
 
-int token_count = 7;
-TokenSpec tokens[] = {
-    {.pattern = "[\\s]+",   .token_type = WHITESPACE},
-    {.pattern = "->",      .token_type = ARROW},
-    {.pattern = "(",       .token_type = LEFT_PAREN},
-    {.pattern = ")",       .token_type = RIGHT_PAREN},
-    {.pattern = ":=",      .token_type = BIND},
-    {.pattern = "[\\d]+",   .token_type = NUMBER},
-    {.pattern = "[\\w]+",   .token_type = IDENTIFIER},
-};
-
-char* tokenTypeToString(int type)
-{
-    switch(type)
-    {
-        case WHITESPACE: return "WHITESPACE";
-        case ARROW: return "ARROW";
-        case LEFT_PAREN: return "LEFT_PAREN";
-        case RIGHT_PAREN: return "RIGHT_PAREN";
-        case BIND: return "BIND";
-        case NUMBER: return "NUMBER";
-        case IDENTIFIER: return "IDENTIFIER";
-    }
-
-    return "UNKNOWN";
+    return temp;
 }
 
-int getTokenType(char* token, char next_char)
-{
-    int len = strlen(token);
-    token[len] = next_char;
-    token[len+1] = 0;
-    int i =0;
 
-    for(i=0;i<token_count;i++)
+/*
+ * Steps:
+ * 1. Pre-process file (ignore whitespace and comments) to extract functions
+ * 1.1. Validate spacing, naming, ...
+ * 2. Complete parts of the function structure little by little
+ * 3. Do optimizations that are possible (make lambdas normal functions, replace chain operator with normal function call, 
+ *      decompose expressions into simple exps, replace .() with normal code, replace casting with core function calls, ...)
+ * 4. Process inside body (extract expressions)
+ * 5. Add required statements like dispose
+ * 6. Generate code
+ * 7. Further opt.
+ * 8. Cache function code and dependencies for use in incremental compilation
+ * See http://lindseykuper.livejournal.com/307725.html
+ */
+
+re_t re_identifier;
+
+int readToken(FILE* file, re_t pattern, char* token)
+{
+    char c = (char)fgetc(file);
+    if ( c == EOF ) return 0;
+    while ( c == '#' ) 
     {
-        if ( re_matchp(tokens[i].compiled_pattern, token) == 0 ) break;
+        ignoreLine(file);
+        c = (char)fgetc(file);
+        while(isspace(c)) c = (char)fgetc(file);
     }
 
-    token[len=0;
+    token[0] = c;
+    token[1] = 0;
 
-    if ( i < token_count ) return tokens[i].token_type;
+    int token_length = 1;
 
-    return UNKNOWN;
+    while( c != EOF && re_matchp(pattern, token) == 0 )
+    {
+        c = (char) fgetc(file);
+        token[token_length] = c;
+        token_length++;
+        token[token_length]=0;
+    }
+
+    if ( token_length == 1 )
+    {
+        //this means that even the first character did not match with the given regex
+        ungetc(c, file);
+        return 0;
+    }
+
+    ungetc(c, file);
+    token_length--;
+    token[token_length] = 0;
+
+    return 1;
 }
 
 int main(int argc, char** argv)
 {
-    for(int i=0;i<token_count;i++)
-    {
-        tokens[i].compiled_pattern = re_compile(tokens[i].pattern);
-    }
+    re_identifier = re_compile("^[\\w]+$");
 
 	FILE *file;
 
     file = fopen(argv[1], "r");
-    char token[256];
-    int token_length = 0;
-    int token_type = UNKNOWN;
-    int last_token_type = UNKNOWN;
-    memset(token, 0, 256);
 
     for(;;) 
     {
-      char c = (char)fgetc(file);
-	  if ( c == EOF ) break;
-	  if ( c == '#' )
-      {
-          char temp = c;
-          while ( temp != EOF && temp != '\n' ) temp = (char)fgetc(file);
-          continue;
-      }
+        char token[32];
 
-	  int token_type = getTokenType(token, c);
+        int result = readToken(file, re_identifier, token);
+        if (result != 1) break;
 
-	  if ( token_type != last_token_type ) 
-      {
-          printf(tokenTypeToString(last_token_type))
-      }
+        printf("found token: %s", token);
+        printf("\n");
 
-	  printf("%c", c);
+        ignoreLine(file);
     }
 
     fclose(file);
