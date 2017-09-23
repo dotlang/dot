@@ -3,104 +3,110 @@
 #include <string.h>
 #include "re.h"
 
-//represents a binding:
-//example 1: x := 12
-//example 2: f := () -> 19.1
-//example 3: g := (x:int) -> x*2
-typedef struct 
-{
-    char name[32];      //whatever comes before :=
-    char body_raw[256]; //whatever comes after :=
-} Binding;
-
-//first phase: lex-read-binding-name
-
-//ignores rest of the current line in the file. Returns 1 if file is finished
-char ignoreLine(FILE* file)
-{
-    char temp = '#';
-    while ( temp != EOF && temp != '\n' ) temp = (char)fgetc(file);
-    ungetc(temp, file);
-
-    return temp;
-}
-
+#define OK 1
+#define FAIL 0
 
 /*
- * Steps:
- * 1. Pre-process file (ignore whitespace and comments) to extract functions
- * 1.1. Validate spacing, naming, ...
- * 2. Complete parts of the function structure little by little
- * 3. Do optimizations that are possible (make lambdas normal functions, replace chain operator with normal function call, 
- *      decompose expressions into simple exps, replace .() with normal code, replace casting with core function calls, ...)
- * 4. Process inside body (extract expressions)
- * 5. Add required statements like dispose
- * 6. Generate code
- * 7. Further opt.
- * 8. Cache function code and dependencies for use in incremental compilation
- * See http://lindseykuper.livejournal.com/307725.html
+ * Grammar of the language:
+ * MODULE := BINDING
+ * BINDING := IDENTIFIER ':=' '()->' NUMBER
+ * IDENTIFIER := \w+
+ * NMUBER := \d+
  */
 
-re_t re_identifier;
+void ignoreLine(FILE* file)
+{
+    char temp[1024];
+    fgets(temp, 1024, file);
+}
 
-int readToken(FILE* file, re_t pattern, char* token)
+void ignoreWhitespace(FILE* file)
 {
     char c = (char)fgetc(file);
-    if ( c == EOF ) return 0;
-    while ( c == '#' ) 
+    while ( isspace(c) || c == '#' ) 
     {
-        ignoreLine(file);
+        if ( c == EOF ) break;
+        if ( c == '#' ) ignoreLine(file);
+
         c = (char)fgetc(file);
-        while(isspace(c)) c = (char)fgetc(file);
-    }
-
-    token[0] = c;
-    token[1] = 0;
-
-    int token_length = 1;
-
-    while( c != EOF && re_matchp(pattern, token) == 0 )
-    {
-        c = (char) fgetc(file);
-        token[token_length] = c;
-        token_length++;
-        token[token_length]=0;
-    }
-
-    if ( token_length == 1 )
-    {
-        //this means that even the first character did not match with the given regex
-        ungetc(c, file);
-        return 0;
     }
 
     ungetc(c, file);
-    token_length--;
-    token[token_length] = 0;
+}
 
-    return 1;
+
+int parseLiteral(FILE* file, char* literal)
+{
+    ignoreWhitespace(file);
+    for(int i=0;i<strlen(literal);i++)
+    {
+        char c = (char)fgetc(file);
+        if ( c != literal[i] ) return FAIL;
+    }
+
+    return OK;
+}
+
+int parseNumber(FILE* file)
+{
+    ignoreWhitespace(file);
+    char c = (char)fgetc(file);
+    if ( !isdigit(c) ) return FAIL;
+    while ( c != EOF && isdigit(c) ) 
+    {
+        printf("%c\n", c);
+        c = (char)fgetc(file);
+    }
+    printf("%c\n", c);
+
+    return OK;
+}
+
+int parseIdentifier(FILE* file) 
+{
+    ignoreWhitespace(file);
+
+    char c = (char)fgetc(file);
+    if ( !isalpha(c) ) return FAIL;
+    while ( c != EOF && isalpha(c) ) c = (char)fgetc(file);
+
+    return OK;
+}
+
+
+int parseBinding(FILE* file)
+{
+    int result = parseIdentifier(file);
+    if ( result == FAIL ) return FAIL;
+
+    result = parseLiteral(file, ":=");
+    if ( result == FAIL ) return FAIL;
+
+    result = parseLiteral(file, "()");
+    if ( result == FAIL ) return FAIL;
+
+    result = parseLiteral(file, "->");
+    if ( result == FAIL ) return FAIL;
+
+    result = parseNumber(file);
+    if ( result == FAIL ) return FAIL;
+
+    return OK;
+}
+
+int parseModule(FILE* file)
+{
+    return parseBinding(file);
 }
 
 int main(int argc, char** argv)
 {
-    re_identifier = re_compile("^[\\w]+$");
-
 	FILE *file;
 
     file = fopen(argv[1], "r");
 
-    for(;;) 
-    {
-        char token[32];
-
-        int result = readToken(file, re_identifier, token);
-        if (result != 1) break;
-
-        printf("found token: %s", token);
-        printf("\n");
-
-        ignoreLine(file);
-    }
+    int result = parseModule(file);
+    printf("result is: %s\n", (result == FAIL)?"FAIL":"OK");
 
     fclose(file);
 
