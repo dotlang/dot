@@ -71,6 +71,7 @@ int parseIdentifier(FILE* file)
     while ( c != EOF && isalpha(c) ) c = (char)fgetc(file);
 
     return OK;
+
 }
 
 
