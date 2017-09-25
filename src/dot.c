@@ -1,11 +1,16 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include "re.h"
 
-#define OK 1
+#define OK   1
 #define FAIL 0
 
+
+//TODO: extract values of tokens (binding name and number)
+//TODO: generate output code with llvm API
+//
 /*
  * Grammar of the language:
  * MODULE := BINDING
@@ -14,19 +19,22 @@
  * NMUBER := \d+
  */
 
-void ignoreLine(FILE* file)
+typedef struct
 {
-    char temp[1024];
-    fgets(temp, 1024, file);
-}
+    char name[256];
+    int  number;
+
+} Binding;
 
 void ignoreWhitespace(FILE* file)
 {
     char c = (char)fgetc(file);
+    char temp[1024];
+
     while ( isspace(c) || c == '#' ) 
     {
         if ( c == EOF ) break;
-        if ( c == '#' ) ignoreLine(file);
+        if ( c == '#' ) fgets(temp, 1024, file);
 
         c = (char)fgetc(file);
     }
@@ -47,37 +55,55 @@ int parseLiteral(FILE* file, char* literal)
     return OK;
 }
 
-int parseNumber(FILE* file)
+int parseNumber(FILE* file, char* token)
 {
     ignoreWhitespace(file);
+    int token_len = 0;
+
     char c = (char)fgetc(file);
-    if ( !isdigit(c) ) return FAIL;
-    while ( c != EOF && isdigit(c) ) 
+    if ( isdigit(c) )
     {
-        printf("%c\n", c);
-        c = (char)fgetc(file);
+        while ( c != EOF && isdigit(c) ) 
+        {
+            token[token_len++] = c;
+            c = (char)fgetc(file);
+        }
+        ungetc(c, file);
     }
-    printf("%c\n", c);
 
-    return OK;
+    token[token_len] = 0;
+    return token_len;
 }
 
-int parseIdentifier(FILE* file) 
+int parseIdentifier(FILE* file, char* token)
 {
     ignoreWhitespace(file);
 
     char c = (char)fgetc(file);
-    if ( !isalpha(c) ) return FAIL;
-    while ( c != EOF && isalpha(c) ) c = (char)fgetc(file);
+    int token_len = 0;
 
-    return OK;
+    if ( isalpha(c) )
+    {
+        while ( c != EOF && isalpha(c) )
+        {
+            token[token_len++] = c;
+            c = (char)fgetc(file);
+        }
+        ungetc(c, file);
+    }
+
+    token[token_len] = 0;
+    return token_len;
 }
 
 
-int parseBinding(FILE* file)
+int parseBinding(FILE* file, Binding* b)
 {
-    int result = parseIdentifier(file);
+    char token[256];
+    int result = parseIdentifier(file, token);
     if ( result == FAIL ) return FAIL;
+    printf("Token: %s\n", token);
+    strcpy(b->name, token);
 
     result = parseLiteral(file, ":=");
     if ( result == FAIL ) return FAIL;
@@ -88,15 +114,21 @@ int parseBinding(FILE* file)
     result = parseLiteral(file, "->");
     if ( result == FAIL ) return FAIL;
 
-    result = parseNumber(file);
+    result = parseNumber(file, token);
     if ( result == FAIL ) return FAIL;
+    printf("Number: %s\n", token);
+    b->number = atoi(token);
 
     return OK;
 }
 
 int parseModule(FILE* file)
 {
-    return parseBinding(file);
+    Binding b;
+    int result = parseBinding(file, &b);
+
+    printf("number is %d\n", b.number);
+    return result;
 }
 
 int main(int argc, char** argv)
