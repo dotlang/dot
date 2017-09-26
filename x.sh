@@ -29,6 +29,7 @@ if [[ ${1:0:1} = x* ]]; then
     for i in `seq 1 $target`;
     do
         ./build/dot ./test/ex$i.dot &> /dev/null
+        ./ex$1
         actual=$?
         expected=$(head -n 2 test/ex$i.dot | tail -n 1 | cut -c3-)
         echo -n "$i >> ";
@@ -49,6 +50,7 @@ echo "**************************** Output:";
 echo
 
 ./build/dot ./test/ex$1.dot
+./ex$1
 actual=$?
 expected=$(head -n 2 test/ex$1.dot | tail -n 1 | cut -c3-)
 

@@ -2,22 +2,11 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include "re.h"
+#include <libgen.h>
 
 #define OK   1
 #define FAIL 0
 
-
-//TODO: extract values of tokens (binding name and number)
-//TODO: generate output code with llvm API
-//
-/*
- * Grammar of the language:
- * MODULE := BINDING
- * BINDING := IDENTIFIER ':=' '()->' NUMBER
- * IDENTIFIER := \w+
- * NMUBER := \d+
- */
 
 typedef struct
 {
@@ -122,25 +111,61 @@ int parseBinding(FILE* file, Binding* b)
     return OK;
 }
 
-int parseModule(FILE* file)
+int parseModule(FILE* file, Binding* b)
 {
-    Binding b;
-    int result = parseBinding(file, &b);
+    int result = parseBinding(file, b);
 
-    printf("number is %d\n", b.number);
     return result;
 }
 
 int main(int argc, char** argv)
 {
 	FILE *file;
+	Binding b;
 
     file = fopen(argv[1], "r");
 
-    int result = parseModule(file);
-    printf("result is: %s\n", (result == FAIL)?"FAIL":"OK");
+    char* input_filename = basename(argv[1]);
+    char* dot_place = strstr(input_filename, ".");
 
+    char base_filename[1024];
+    int base_len = dot_place - input_filename;
+    strncpy(base_filename, input_filename, base_len);
+    base_filename[base_len] = 0;
+    printf("%s", base_filename);
+
+    
+
+    int result = parseModule(file, &b);
+    printf("result is: %s\n", (result == FAIL)?"FAIL":"OK");
     fclose(file);
 
-    return 219;
+    char out_command[1024];
+    sprintf(out_command, "as -o %s.o", base_filename);
+
+	FILE *pipe_fp;
+	if (( pipe_fp = popen(out_command, "w")) == NULL)
+	{
+		perror("popen");
+		exit(1);
+	}
+
+    fprintf(pipe_fp, "\t.global _start\n");
+    fprintf(pipe_fp, "\t.text\n");
+    fprintf(pipe_fp, "\t_start:\n");
+    fprintf(pipe_fp, "\t\tmov $%d, %%rdi\n", b.number);
+    fprintf(pipe_fp, "\t\tmov $60, %%rax\n");
+    fprintf(pipe_fp, "\t\tsyscall\n");
+
+    fclose(pipe_fp);
+
+
+    char ld_command[1024];
+    sprintf(ld_command, "ld -o %s %s.o", base_filename, base_filename);
+	system(ld_command);
+
+	char rm_command[2014];
+	sprintf(rm_command, "rm %s.o", base_filename);
+
+	system(rm_command);
 }
