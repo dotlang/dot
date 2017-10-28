@@ -15,10 +15,43 @@
 
 typedef struct
 {
+    char *input_file_path;
+    char input_file_name[1024];
+    FILE* input_file;
+    int  debug_mode;
+
+    char output_dir[1024];
+    char output_file_path[1024];
+
+} CompilationContext;
+
+
+typedef struct
+{
     char name[256];
     int  number;
 
 } Binding;
+
+void debugLog(CompilationContext* context, const char* format, ...)
+{
+    if ( context->debug_mode == 0 ) return;
+	char result[1024];
+
+    /* Declare a va_list type variable */
+    va_list myargs;
+
+    /* Initialise the va_list variable with the ... after fmt */
+    va_start(myargs, format);
+
+    /* Forward the '...' to vprintf */
+    vsprintf(result, format, myargs);
+
+    /* Clean up the va_list */
+    va_end(myargs);
+
+	printf("%s", result);
+}
 
 void ignoreWhitespace(FILE* file)
 {
@@ -150,20 +183,42 @@ void generate(Binding* b, char* output_file)
 
 int main(int argc, char** argv)
 {
+    if ( argc == 0 )
+    {
+        printf("Usage: dot <input_file> [-d]");
+        return 0;
+    }
+
+
+	CompilationContext context;
+    context.debug_mode = 0;
+
+    for(int i=1;i<argc;i++)
+    {
+        char* arg = argv[i];
+        if ( strcmp(arg, "-d") == 0 ) 
+        {
+            printf("debug mode enabled\n");
+            context.debug_mode = 1;
+        }
+        else
+        {
+            context.input_file_path = argv[i];
+        }
+    }
+
+    context.input_file = fopen(context.input_file_path, "r");
+
     Binding b;
-
-    FILE *input_file = fopen(argv[1], "r");
-
-    int result = parseModule(input_file, &b);
+    int result = parseModule(context.input_file, &b);
     printf("parse result is: %s\n", (result == FAIL)?"FAIL":"OK");
-    fclose(input_file);
+    fclose(context.input_file);
 
 
     //generate LLVM intermediate representation of the source code file
-    char temp_dir[256];
-    strcpy(temp_dir, "/tmp/dot_temp_XXXXXX");
-    mkdtemp(temp_dir);
-    printf("temp dir %s created\n", temp_dir);
+    strcpy(context.output_dir, "/tmp/dot_temp_XXXXXX");
+    mkdtemp(context.output_dir);
+    printf("temp dir %s created\n", context.output_dir);
 
     char base_filename[1024];
     char* input_filename = basename(argv[1]);
@@ -173,19 +228,21 @@ int main(int argc, char** argv)
     base_filename[base_len] = 0;
     printf("base filename = %s\n", base_filename);
 
-    char temp_filename[256];
-    sprintf(temp_filename, "%s/%s.ll", temp_dir, base_filename);
-    printf("intermediate ll stored at %s\n", temp_filename);
-    generate(&b, temp_filename);
 
+    sprintf(context.output_file_path, "%s/%s.ll", context.output_dir, base_filename);
+    printf("intermediate ll stored at %s\n", context.output_file_path);
+    generate(&b, context.output_file_path);
 
     //compile llvm output to object file
     char clang_command[1024];
-    sprintf(clang_command, "clang -x ir -o %s %s", base_filename, temp_filename);
+    sprintf(clang_command, "clang -x ir -o %s %s", base_filename, context.output_file_path);
     printf("running %s\n", clang_command);
     system(clang_command);
 
     char cleanup_cmd[1024];
-    sprintf(cleanup_cmd, "rm -rf %s", temp_dir);
+    sprintf(cleanup_cmd, "rm -rf %s", context.output_dir);
     system(cleanup_cmd);
+
+    debugLog(&context, "done with %d and %d and %d \n", 100, 201, 301);
 }
+

@@ -50,7 +50,7 @@ echo
 echo "**************************** Output:";
 echo
 
-./build/dot ./test/ex$1.dot
+./build/dot ./test/ex$1.dot -d
 ./ex$1
 actual=$?
 expected=$(head -n 2 test/ex$1.dot | tail -n 1 | cut -c3-)
