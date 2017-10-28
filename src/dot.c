@@ -7,7 +7,6 @@
 #define OK   1
 #define FAIL 0
 
-
 typedef struct
 {
     char name[256];

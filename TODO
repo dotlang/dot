@@ -1,0 +1,3 @@
+* Create dirs in test for different versions and use them in x.sh instead of test number
+* Create a ChangeLog file to indicate what is planned/expected for each version
+
