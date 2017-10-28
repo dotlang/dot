@@ -37,10 +37,10 @@ void ignoreWhitespace(FILE* file)
 }
 
 
-int parseLiteral(FILE* file, char* literal)
+int parseLiteral(FILE* file, const char* literal)
 {
     ignoreWhitespace(file);
-    for(int i=0;i<strlen(literal);i++)
+    for(size_t i=0;i<strlen(literal);i++)
     {
         char c = (char)fgetc(file);
         if ( c != literal[i] ) return FAIL;
@@ -123,7 +123,7 @@ int parseModule(FILE* file, Binding* b)
     return result;
 }
 
-void generate(Binding* b, FILE* out)
+void generate(Binding* b, char* output_file)
 {
     LLVMModuleRef module = LLVMModuleCreateWithName("test");
     LLVMSetDataLayout(module, "");
@@ -140,55 +140,52 @@ void generate(Binding* b, FILE* out)
     LLVMBuildRet(builder, val);
 
     char *error = NULL;
-    bool isInvalid = LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
+    LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
+    LLVMPrintModuleToFile(module, output_file, &error);
+
     LLVMDisposeMessage(error);
-
-    char* outData = LLVMPrintModuleToString(module);
-    fputs(outData, out);
-    LLVMDisposeMessage(outData);
-
     LLVMDisposeBuilder(builder);
     LLVMDisposeModule(module);
 }
 
 int main(int argc, char** argv)
 {
-    FILE *file;
     Binding b;
 
-    file = fopen(argv[1], "r");
+    FILE *input_file = fopen(argv[1], "r");
 
-    char* input_filename = basename(argv[1]);
-    char* dot_place = strstr(input_filename, ".");
+    int result = parseModule(input_file, &b);
+    printf("parse result is: %s\n", (result == FAIL)?"FAIL":"OK");
+    fclose(input_file);
+
+
+    //generate LLVM intermediate representation of the source code file
+    char temp_dir[256];
+    strcpy(temp_dir, "/tmp/dot_temp_XXXXXX");
+    mkdtemp(temp_dir);
+    printf("temp dir %s created\n", temp_dir);
 
     char base_filename[1024];
+    char* input_filename = basename(argv[1]);
+    char* dot_place = strstr(input_filename, ".");
     int base_len = dot_place - input_filename;
     strncpy(base_filename, input_filename, base_len);
     base_filename[base_len] = 0;
-    printf("%s", base_filename);
+    printf("base filename = %s\n", base_filename);
 
-
-
-    int result = parseModule(file, &b);
-    printf("result is: %s\n", (result == FAIL)?"FAIL":"OK");
-    fclose(file);
-
-    char temp_file[256];
-    sprintf(temp_file, "/tmp/%s.ll", base_filename);
-    FILE* llvm_output = fopen(temp_file, "w");
-    if ( !llvm_output )
-    {
-        printf("Cannot open mkstemp\n");
-        return -1;
-    }
-
-    //generate LLVM intermediate representation of the source code file
-    generate(&b, llvm_output);
-    fclose(llvm_output);
+    char temp_filename[256];
+    sprintf(temp_filename, "%s/%s.ll", temp_dir, base_filename);
+    printf("intermediate ll stored at %s\n", temp_filename);
+    generate(&b, temp_filename);
 
 
     //compile llvm output to object file
     char clang_command[1024];
-    sprintf(clang_command, "clang -x ir -o ./build/%s %s", base_filename, temp_file);
+    sprintf(clang_command, "clang -x ir -o %s %s", base_filename, temp_filename);
+    printf("running %s\n", clang_command);
     system(clang_command);
+
+    char cleanup_cmd[1024];
+    sprintf(cleanup_cmd, "rm -rf %s", temp_dir);
+    system(cleanup_cmd);
 }

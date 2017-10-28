@@ -21,6 +21,7 @@ fi
 echo "**************************** Building...";
 echo
 
+rm -rf build
 mkdir build
 clang++ -std=c11  `llvm-config --cflags` -x c src/dot.c `llvm-config --ldflags --libs core analysis native bitwriter --system-libs` -lm -o ./build/dot
 
@@ -50,9 +51,10 @@ echo "**************************** Output:";
 echo
 
 ./build/dot ./test/ex$1.dot
-./build/ex$1
+./ex$1
 actual=$?
 expected=$(head -n 2 test/ex$1.dot | tail -n 1 | cut -c3-)
+rm ex$1
 
 echo
 echo
