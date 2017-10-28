@@ -3,6 +3,12 @@
 #include <ctype.h>
 #include <string.h>
 #include <libgen.h>
+#include <assert.h>
+#include <stdbool.h>
+
+#include "llvm-c/Core.h"
+#include "llvm-c/Analysis.h"
+#include "llvm-c/TargetMachine.h"
 
 #define OK   1
 #define FAIL 0
@@ -117,10 +123,38 @@ int parseModule(FILE* file, Binding* b)
     return result;
 }
 
+void generate(Binding* b, FILE* out)
+{
+    LLVMModuleRef module = LLVMModuleCreateWithName("test");
+    LLVMSetDataLayout(module, "");
+    LLVMSetTarget(module, LLVMGetDefaultTargetTriple());
+
+    LLVMBuilderRef builder = LLVMCreateBuilder();
+    LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
+    LLVMValueRef mainfunc = LLVMAddFunction(module, "main", funcType);
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry");
+    LLVMPositionBuilderAtEnd(builder, entry);
+
+    LLVMTypeRef intType = LLVMIntType(32);
+    LLVMValueRef val = LLVMConstInt(intType, b->number, true);
+    LLVMBuildRet(builder, val);
+
+    char *error = NULL;
+    bool isInvalid = LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
+    LLVMDisposeMessage(error);
+
+    char* outData = LLVMPrintModuleToString(module);
+    fputs(outData, out);
+    LLVMDisposeMessage(outData);
+
+    LLVMDisposeBuilder(builder);
+    LLVMDisposeModule(module);
+}
+
 int main(int argc, char** argv)
 {
-	FILE *file;
-	Binding b;
+    FILE *file;
+    Binding b;
 
     file = fopen(argv[1], "r");
 
@@ -133,38 +167,28 @@ int main(int argc, char** argv)
     base_filename[base_len] = 0;
     printf("%s", base_filename);
 
-    
+
 
     int result = parseModule(file, &b);
     printf("result is: %s\n", (result == FAIL)?"FAIL":"OK");
     fclose(file);
 
-    char out_command[1024];
-    sprintf(out_command, "as -o %s.o", base_filename);
+    char temp_file[256];
+    sprintf(temp_file, "/tmp/%s.ll", base_filename);
+    FILE* llvm_output = fopen(temp_file, "w");
+    if ( !llvm_output )
+    {
+        printf("Cannot open mkstemp\n");
+        return -1;
+    }
 
-	FILE *pipe_fp;
-	if (( pipe_fp = popen(out_command, "w")) == NULL)
-	{
-		perror("popen");
-		exit(1);
-	}
-
-    fprintf(pipe_fp, "\t.global _start\n");
-    fprintf(pipe_fp, "\t.text\n");
-    fprintf(pipe_fp, "\t_start:\n");
-    fprintf(pipe_fp, "\t\tmov $%d, %%rdi\n", b.number);
-    fprintf(pipe_fp, "\t\tmov $60, %%rax\n");
-    fprintf(pipe_fp, "\t\tsyscall\n");
-
-    fclose(pipe_fp);
+    //generate LLVM intermediate representation of the source code file
+    generate(&b, llvm_output);
+    fclose(llvm_output);
 
 
-    char ld_command[1024];
-    sprintf(ld_command, "ld -o %s %s.o", base_filename, base_filename);
-	system(ld_command);
-
-	char rm_command[2014];
-	sprintf(rm_command, "rm %s.o", base_filename);
-
-	system(rm_command);
+    //compile llvm output to object file
+    char clang_command[1024];
+    sprintf(clang_command, "clang -x ir -o ./build/%s %s", base_filename, temp_file);
+    system(clang_command);
 }

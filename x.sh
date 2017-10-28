@@ -21,8 +21,8 @@ fi
 echo "**************************** Building...";
 echo
 
-make clean > /dev/null
-make > /dev/null
+mkdir build
+clang++ -std=c11  `llvm-config --cflags` -x c src/dot.c `llvm-config --ldflags --libs core analysis native bitwriter --system-libs` -lm -o ./build/dot
 
 if [[ ${1:0:1} = x* ]]; then
     target=${1:1}
@@ -50,7 +50,7 @@ echo "**************************** Output:";
 echo
 
 ./build/dot ./test/ex$1.dot
-./ex$1
+./build/ex$1
 actual=$?
 expected=$(head -n 2 test/ex$1.dot | tail -n 1 | cut -c3-)
 
