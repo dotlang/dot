@@ -129,7 +129,6 @@ int parseBinding(FILE* file, Binding* b)
     char token[256];
     int result = parseIdentifier(file, token);
     if ( result == FAIL ) return FAIL;
-    printf("Token: %s\n", token);
     strcpy(b->name, token);
 
     result = parseLiteral(file, ":=");
@@ -143,7 +142,6 @@ int parseBinding(FILE* file, Binding* b)
 
     result = parseNumber(file, token);
     if ( result == FAIL ) return FAIL;
-    printf("Number: %s\n", token);
     b->number = atoi(token);
 
     return OK;

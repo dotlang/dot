@@ -7,13 +7,19 @@ if [ -z "$0" ]; then
     exit
 fi
 
+rm -rf build
+mkdir build
+clang++ -std=c11  `llvm-config --cflags` -x c src/dot.c `llvm-config --ldflags --libs core analysis native bitwriter --system-libs` -lm -o ./build/dot
+
+millis(){  python -c "import time; print(int(time.time()*1000))"; }
+
 dotest() {
     test_file=$1
     rest_args=$2
     file_name=$(basename ${test_file})
     file_name="${file_name%.*}"
 
-    echo "Running $test_file test..."
+    echo "$test_file..."
     echo "========================="
     #cat with line numbers
     cat -n $test_file
@@ -28,6 +34,9 @@ dotest() {
     echo
 }
 
+
+start=$(millis)
+
 cd "$(dirname "$0")"
 
 #do we need to run a single test?
@@ -37,12 +46,15 @@ if [[ $# > 0 ]]; then
     rest_args=$*
 
     dotest $test_file $rest_args
-    
-    echo
-    exit
+    echo -n -e '\e[?0c'
+else
+    shopt -s globstar
+    for f in ./testsuite/**/*.dot ; do
+      dotest $f
+    done
 fi
 
-shopt -s globstar
-for f in ./testsuite/**/*.dot ; do
-  dotest $f
-done
+end=$(millis)
+runtime=$(((end-start)))
+tput init
+echo "Total time: ${runtime}ms"
