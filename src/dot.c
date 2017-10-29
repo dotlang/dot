@@ -28,6 +28,7 @@ typedef struct
 
 typedef struct 
 {
+    //+, -, * or / or 0 when expression is a single number
     char op;
     int  num1;
     int  num2;
@@ -176,7 +177,7 @@ int parseMathExpression(FILE* file, MathExpression* exp)
     if ( result == FAIL ) return FAIL;
     exp->num1 = atoi(num1);
 
-    const char* operators="+-";
+    const char* operators="+-*/";
 
     result = parseMultipleChoiceLiteral(file, operators);
     if ( result == FAIL ) 
@@ -240,8 +241,25 @@ LLVMValueRef generateMathExpression(MathExpression* exp, LLVMBuilderRef builder)
         LLVMValueRef val1 = LLVMConstInt(intType, exp->num1, true);
         LLVMValueRef val2 = LLVMConstInt(intType, exp->num2, true);
 
-        return LLVMBuildAdd(builder, val1, val2, "temp");
+        if ( exp->op == '+' )
+        {
+            return LLVMBuildAdd(builder, val1, val2, "temp");
+        }
+        else if ( exp->op == '-' )
+        {
+            return LLVMBuildSub(builder, val1, val2, "temp");
+        }
+        else if ( exp->op == '*' )
+        {
+            return LLVMBuildMul(builder, val1, val2, "temp");
+        }
+        else if ( exp->op == '/' )
+        {
+            return LLVMBuildSDiv(builder, val1, val2, "temp");
+        }
     }
+
+    abort();
 }
 
 void generate(Binding* b, char* output_file)

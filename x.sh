@@ -7,9 +7,13 @@ if [ -z "$0" ]; then
     exit
 fi
 
+cd "$(dirname "$0")"
 rm -rf build
 mkdir build
 clang++ -std=c11  `llvm-config --cflags` -x c src/dot.c `llvm-config --ldflags --libs core analysis native bitwriter --system-libs` -lm -o ./build/dot
+if [ $? -ne "0" ]; then
+    exit
+fi
 
 success_count=0
 fail_count=0
@@ -22,7 +26,6 @@ dotest() {
     file_name=$(basename ${test_file})
     file_name="${file_name%.*}"
 
-    echo -n "$test_file ..."
     ./build/dot $rest_args $test_file
     ./$file_name
     actual=$?
@@ -37,10 +40,10 @@ dotest() {
     rm $file_name
 
     if [ "$actual" = "$expected" ]; then 
-        echo -e "\e[0;32m SUCCESS! [$actual = $expected]"; 
+        echo -e "\e[0;32m ${test_file} \t PASSED!"
         let "success_count++"
     else 
-        echo -e "\e[31m FAIL! Got $actual but $expected was expected."; 
+        echo -e "\e[31m ${test_file} \t FAILED! Got $actual but $expected was expected."
         let "fail_count++"
     fi
 
@@ -50,8 +53,6 @@ dotest() {
 
 start=$(millis)
 
-cd "$(dirname "$0")"
-
 #do we need to run a single test?
 if [[ $# > 0 ]]; then
     test_file=$1
@@ -59,7 +60,6 @@ if [[ $# > 0 ]]; then
     rest_args=$*
 
     dotest $test_file $rest_args
-    echo -n -e '\e[?0c'
 else
     shopt -s globstar
     for f in ./testsuite/**/*.dot ; do
@@ -70,5 +70,5 @@ fi
 end=$(millis)
 runtime=$(((end-start)))
 echo
-echo "Total time: ${runtime}ms."
-echo "$success_count test(s) passed, $fail_count test(s) failed."
+echo "Total time: ${runtime}ms"
+echo -e "$success_count test(s) passed, $fail_count test(s) failed"
