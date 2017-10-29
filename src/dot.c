@@ -26,12 +26,20 @@ typedef struct
 } CompilationContext;
 
 
-typedef struct 
+typedef struct MathExpression
 {
     //+, -, * or / or 0 when expression is a single number
+    //if op is 0, then we have a single number
     char op;
-    int  num1;
-    int  num2;
+    union
+    {
+        struct
+        {
+            struct MathExpression* lhs;
+            struct MathExpression* rhs;
+        };
+        int number;
+    };
 } MathExpression;
 
 typedef struct
@@ -174,8 +182,19 @@ int parseMathExpression(FILE* file, MathExpression* exp)
 {
     char num1[16];
     int result = parseNumber(file, num1);
-    if ( result == FAIL ) return FAIL;
-    exp->num1 = atoi(num1);
+    if ( result == FAIL ) 
+    {
+        result = parseLiteral(file, "(");
+        if ( result != FAIL )
+        {
+            result = parseMathExpression(file, exp);
+            if ( result == FAIL ) return FAIL;
+        }
+        result = parseLiteral(file, ")");
+        if ( result == FAIL ) return FAIL;
+
+        return OK;
+    }
 
     const char* operators="+-*/";
 
@@ -183,16 +202,19 @@ int parseMathExpression(FILE* file, MathExpression* exp)
     if ( result == FAIL ) 
     {
         exp->op = 0;
+        exp->number = atoi(num1);
         return OK;
     }
 
+    exp->lhs = malloc(sizeof(MathExpression));
+    exp->lhs->op = 0;
+    exp->lhs->number = atoi(num1);
+
     exp->op = operators[result];
-
-    char num2[16];
-    result = parseNumber(file, num2);
+    
+    exp->rhs = malloc(sizeof(MathExpression));
+    result = parseMathExpression(file, exp->rhs);
     if ( result == FAIL ) return FAIL;
-
-    exp->num2 = atoi(num2);
 
     return OK;
 }
@@ -228,18 +250,19 @@ int parseModule(FILE* file, Binding* b)
     return result;
 }
 
-LLVMValueRef generateMathExpression(MathExpression* exp, LLVMBuilderRef builder)
+LLVMValueRef generateMathExpression(CompilationContext* context, MathExpression* exp, LLVMBuilderRef builder)
 {
+    debugLog(context, "Generating code for math exp of type %c", exp->op);
+
     if ( exp->op == 0 )
     {
         LLVMTypeRef intType = LLVMIntType(32);
-        return LLVMConstInt(intType, exp->num1, true);
+        return LLVMConstInt(intType, exp->number, true);
     }
     else
     {
-        LLVMTypeRef intType = LLVMIntType(32);
-        LLVMValueRef val1 = LLVMConstInt(intType, exp->num1, true);
-        LLVMValueRef val2 = LLVMConstInt(intType, exp->num2, true);
+        LLVMValueRef val1 = generateMathExpression(context, exp->lhs, builder);
+        LLVMValueRef val2 = generateMathExpression(context, exp->rhs, builder);
 
         if ( exp->op == '+' )
         {
@@ -262,7 +285,7 @@ LLVMValueRef generateMathExpression(MathExpression* exp, LLVMBuilderRef builder)
     abort();
 }
 
-void generate(Binding* b, char* output_file)
+void generate(CompilationContext* context, Binding* b, char* output_file)
 {
     LLVMModuleRef module = LLVMModuleCreateWithName("test");
     LLVMSetDataLayout(module, "");
@@ -274,7 +297,7 @@ void generate(Binding* b, char* output_file)
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
-    LLVMBuildRet(builder, generateMathExpression(&b->exp, builder));
+    LLVMBuildRet(builder, generateMathExpression(context, &b->exp, builder));
 
     char *error = NULL;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
@@ -334,7 +357,7 @@ int main(int argc, char** argv)
 
     sprintf(context.output_file_path, "%s/%s.ll", context.output_dir, base_filename);
     debugLog(&context, "Will store intermediate code at %s", context.output_file_path);
-    generate(&b, context.output_file_path);
+    generate(&context, &b, context.output_file_path);
     debugLog(&context, "Code generation finished.");
 
     //compile llvm output to object file

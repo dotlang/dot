@@ -40,10 +40,10 @@ dotest() {
     rm $file_name
 
     if [ "$actual" = "$expected" ]; then 
-        echo -e "\e[0;32m ${test_file} \t PASSED!"
+        echo -e "\e[0;32m${test_file} \t PASSED!"
         let "success_count++"
     else 
-        echo -e "\e[31m ${test_file} \t FAILED! Got $actual but $expected was expected."
+        echo -e "\e[31m${test_file} \t FAILED! Got $actual but $expected was expected."
         let "fail_count++"
     fi
 
