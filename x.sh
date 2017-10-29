@@ -11,8 +11,10 @@ fi
 
 cd "$(dirname "$0")"
 
-if [[ ${1:0:1} = c* ]]; then
-    target=${1:1}
+number=$1
+shift
+if [[ ${number:0:1} = c* ]]; then
+    target=${number:1}
     cat tests/ex$target.dot
     echo
     exit
@@ -25,12 +27,12 @@ rm -rf build
 mkdir build
 clang++ -std=c11  `llvm-config --cflags` -x c src/dot.c `llvm-config --ldflags --libs core analysis native bitwriter --system-libs` -lm -o ./build/dot
 
-if [[ ${1:0:1} = x* ]]; then
-    target=${1:1}
+if [[ ${number:0:1} = x* ]]; then
+    target=${number:1}
     for i in `seq 1 $target`;
     do
         ./build/dot ./test/ex$i.dot &> /dev/null
-        ./ex$1
+        ./ex$i
         actual=$?
         expected=$(head -n 2 test/ex$i.dot | tail -n 1 | cut -c3-)
         echo -n "$i >> ";
@@ -44,17 +46,20 @@ echo
 echo "**************************** Input file:";
 echo
 
-cat -n ./test/ex$1.dot
+cat -n ./test/ex$number.dot
 
 echo
 echo "**************************** Output:";
 echo
 
-./build/dot ./test/ex$1.dot -d
-./ex$1
+rest_args=$*
+echo "rest of args: $rest_args"
+echo "./build/dot $rest_args test/ex$number.dot"
+./build/dot $rest_args test/ex$number.dot
+./ex$number
 actual=$?
-expected=$(head -n 2 test/ex$1.dot | tail -n 1 | cut -c3-)
-rm ex$1
+expected=$(head -n 2 test/ex$number.dot | tail -n 1 | cut -c3-)
+rm ex$number
 
 echo
 echo

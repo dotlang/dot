@@ -50,7 +50,7 @@ void debugLog(CompilationContext* context, const char* format, ...)
     /* Clean up the va_list */
     va_end(myargs);
 
-	printf("%s", result);
+	printf("%s\n", result);
 }
 
 void ignoreWhitespace(FILE* file)
@@ -198,8 +198,8 @@ int main(int argc, char** argv)
         char* arg = argv[i];
         if ( strcmp(arg, "-d") == 0 ) 
         {
-            printf("debug mode enabled\n");
             context.debug_mode = 1;
+            debugLog(&context, "debug mode enabled\n");
         }
         else
         {
@@ -211,38 +211,40 @@ int main(int argc, char** argv)
 
     Binding b;
     int result = parseModule(context.input_file, &b);
-    printf("parse result is: %s\n", (result == FAIL)?"FAIL":"OK");
     fclose(context.input_file);
-
+    debugLog(&context, "parse result is: %s", (result == FAIL)?"FAIL":"OK");
 
     //generate LLVM intermediate representation of the source code file
     strcpy(context.output_dir, "/tmp/dot_temp_XXXXXX");
     mkdtemp(context.output_dir);
-    printf("temp dir %s created\n", context.output_dir);
+    debugLog(&context, "temp dir %s created", context.output_dir);
 
     char base_filename[1024];
-    char* input_filename = basename(argv[1]);
+    char* input_filename = basename(context.input_file_path);
     char* dot_place = strstr(input_filename, ".");
     int base_len = dot_place - input_filename;
     strncpy(base_filename, input_filename, base_len);
     base_filename[base_len] = 0;
-    printf("base filename = %s\n", base_filename);
+    debugLog(&context, "base filename = %s", base_filename);
 
 
     sprintf(context.output_file_path, "%s/%s.ll", context.output_dir, base_filename);
-    printf("intermediate ll stored at %s\n", context.output_file_path);
+    debugLog(&context, "Will store intermediate code at %s", context.output_file_path);
     generate(&b, context.output_file_path);
+    debugLog(&context, "Code generation finished.");
 
     //compile llvm output to object file
+    debugLog(&context, "Compiling to native executable...");
     char clang_command[1024];
     sprintf(clang_command, "clang -x ir -o %s %s", base_filename, context.output_file_path);
-    printf("running %s\n", clang_command);
+    debugLog(&context, "Compilation command: %s", clang_command);
     system(clang_command);
+    debugLog(&context, "Compilation finished.");
 
+    debugLog(&context, "Cleaning up temp files...");
     char cleanup_cmd[1024];
     sprintf(cleanup_cmd, "rm -rf %s", context.output_dir);
     system(cleanup_cmd);
-
-    debugLog(&context, "done with %d and %d and %d \n", 100, 201, 301);
+    debugLog(&context, "Cleanup finished.");
 }
 
