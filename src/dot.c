@@ -29,9 +29,16 @@ typedef struct
 typedef struct
 {
     char name[256];
-    int  number;
+    MathExpression exp;
 
 } Binding;
+
+typedef struct 
+{
+    char op;
+    int  num1;
+    int  num2;
+} MathExpression;
 
 void debugLog(CompilationContext* context, const char* format, ...)
 {
@@ -73,11 +80,42 @@ void ignoreWhitespace(FILE* file)
 int parseLiteral(FILE* file, const char* literal)
 {
     ignoreWhitespace(file);
+
+    long initial_position = ftell(file);
     for(size_t i=0;i<strlen(literal);i++)
     {
         char c = (char)fgetc(file);
-        if ( c != literal[i] ) return FAIL;
+        if ( c != literal[i] ) 
+        {
+            fseek(file, initial_position, SEEK_SET);
+            return FAIL;
+        }
     }
+
+    return OK;
+}
+
+int parseMathExpression(FILE* file, MathExpression* exp)
+{
+    char num1[16];
+    int result = parseNumber(file, num1);
+    if ( result == FAIL ) return FAIL;
+    exp.num1 = atoi(num1);
+
+    result = parseLiteral(file, "+");
+    if ( result == FAIL ) 
+    {
+        exp.op = 0;
+        return OK;
+    }
+
+    exp.op = '+';
+
+    char num2[16];
+    result = parseNumber(file, num2);
+    if ( result == FAIL ) return FAIL;
+
+    exp.num2 = atoi(num2);
 
     return OK;
 }
@@ -99,7 +137,7 @@ int parseNumber(FILE* file, char* token)
     }
 
     token[token_len] = 0;
-    return token_len;
+    return OK;
 }
 
 int parseIdentifier(FILE* file, char* token)

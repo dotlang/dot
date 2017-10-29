@@ -1,3 +1,9 @@
-* Create dirs in test for different versions and use them in x.sh instead of test number
 * Create a ChangeLog file to indicate what is planned/expected for each version
-
+* Plan for 0.1.1
+    * Support main with add for two number literals
+    * Support add/sub/mul/div with two number literals
+    * Support parentheses with +-*/ and number literals
+    * Support calling another function in expression literal instead of a number
+* Plan for 0.1.2: Support bindings of type int, expressions, float
+* Future: Complete expression support, booleans, assert core function, support for char
+* Not in 0.1: sequence, string, generics, lambda, concurrency, import, map, union, struct, named type
