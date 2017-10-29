@@ -1,3 +1,0 @@
-# vi:syntax=python
-# 80
-main := () -> 79+1

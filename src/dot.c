@@ -11,7 +11,7 @@
 #include "llvm-c/TargetMachine.h"
 
 #define OK   1
-#define FAIL 0
+#define FAIL -1
 
 typedef struct
 {
@@ -78,6 +78,24 @@ void ignoreWhitespace(FILE* file)
 
 #define SAVE_POSITION long initial_position = ftell(file)
 #define RESTORE_POSITION fseek(file, initial_position, SEEK_SET)
+
+//Try to read any of given characters. Return index of matching character
+int parseMultipleChoiceLiteral(FILE* file, const char* choices)
+{
+    ignoreWhitespace(file);
+
+    SAVE_POSITION;
+    char c = (char)fgetc(file);
+    int choice_count = strlen(choices);
+
+    for(int i=0;i<choice_count;i++)
+    {
+        if ( c == choices[i] ) return i;
+    }
+
+    RESTORE_POSITION;
+    return FAIL;
+}
 
 int parseLiteral(FILE* file, const char* literal)
 {
@@ -158,14 +176,16 @@ int parseMathExpression(FILE* file, MathExpression* exp)
     if ( result == FAIL ) return FAIL;
     exp->num1 = atoi(num1);
 
-    result = parseLiteral(file, "+");
+    const char* operators="+-";
+
+    result = parseMultipleChoiceLiteral(file, operators);
     if ( result == FAIL ) 
     {
         exp->op = 0;
         return OK;
     }
 
-    exp->op = '+';
+    exp->op = operators[result];
 
     char num2[16];
     result = parseNumber(file, num2);
@@ -175,6 +195,7 @@ int parseMathExpression(FILE* file, MathExpression* exp)
 
     return OK;
 }
+
 int parseBinding(FILE* file, Binding* b)
 {
     char token[256];
@@ -206,6 +227,23 @@ int parseModule(FILE* file, Binding* b)
     return result;
 }
 
+LLVMValueRef generateMathExpression(MathExpression* exp, LLVMBuilderRef builder)
+{
+    if ( exp->op == 0 )
+    {
+        LLVMTypeRef intType = LLVMIntType(32);
+        return LLVMConstInt(intType, exp->num1, true);
+    }
+    else
+    {
+        LLVMTypeRef intType = LLVMIntType(32);
+        LLVMValueRef val1 = LLVMConstInt(intType, exp->num1, true);
+        LLVMValueRef val2 = LLVMConstInt(intType, exp->num2, true);
+
+        return LLVMBuildAdd(builder, val1, val2, "temp");
+    }
+}
+
 void generate(Binding* b, char* output_file)
 {
     LLVMModuleRef module = LLVMModuleCreateWithName("test");
@@ -218,22 +256,7 @@ void generate(Binding* b, char* output_file)
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
-    if ( b->exp.op == 0 )
-    {
-        LLVMTypeRef intType = LLVMIntType(32);
-        LLVMValueRef val = LLVMConstInt(intType, b->exp.num1, true);
-        LLVMBuildRet(builder, val);
-    }
-    else
-    {
-        LLVMTypeRef intType = LLVMIntType(32);
-        LLVMValueRef val1 = LLVMConstInt(intType, b->exp.num1, true);
-        LLVMValueRef val2 = LLVMConstInt(intType, b->exp.num2, true);
-
-        LLVMValueRef tmp = LLVMBuildAdd(builder, val1, val2, "temp");
-        LLVMBuildRet(builder, tmp);
-    }
-
+    LLVMBuildRet(builder, generateMathExpression(&b->exp, builder));
 
     char *error = NULL;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
