@@ -26,19 +26,19 @@ typedef struct
 } CompilationContext;
 
 
-typedef struct
-{
-    char name[256];
-    MathExpression exp;
-
-} Binding;
-
 typedef struct 
 {
     char op;
     int  num1;
     int  num2;
 } MathExpression;
+
+typedef struct
+{
+    char name[256];
+    MathExpression exp;
+
+} Binding;
 
 void debugLog(CompilationContext* context, const char* format, ...)
 {
@@ -76,18 +76,20 @@ void ignoreWhitespace(FILE* file)
     ungetc(c, file);
 }
 
+#define SAVE_POSITION long initial_position = ftell(file)
+#define RESTORE_POSITION fseek(file, initial_position, SEEK_SET)
 
 int parseLiteral(FILE* file, const char* literal)
 {
     ignoreWhitespace(file);
 
-    long initial_position = ftell(file);
+    SAVE_POSITION;
     for(size_t i=0;i<strlen(literal);i++)
     {
         char c = (char)fgetc(file);
         if ( c != literal[i] ) 
         {
-            fseek(file, initial_position, SEEK_SET);
+            RESTORE_POSITION;
             return FAIL;
         }
     }
@@ -95,34 +97,11 @@ int parseLiteral(FILE* file, const char* literal)
     return OK;
 }
 
-int parseMathExpression(FILE* file, MathExpression* exp)
-{
-    char num1[16];
-    int result = parseNumber(file, num1);
-    if ( result == FAIL ) return FAIL;
-    exp.num1 = atoi(num1);
-
-    result = parseLiteral(file, "+");
-    if ( result == FAIL ) 
-    {
-        exp.op = 0;
-        return OK;
-    }
-
-    exp.op = '+';
-
-    char num2[16];
-    result = parseNumber(file, num2);
-    if ( result == FAIL ) return FAIL;
-
-    exp.num2 = atoi(num2);
-
-    return OK;
-}
-
 int parseNumber(FILE* file, char* token)
 {
     ignoreWhitespace(file);
+    SAVE_POSITION;
+
     int token_len = 0;
 
     char c = (char)fgetc(file);
@@ -135,6 +114,11 @@ int parseNumber(FILE* file, char* token)
         }
         ungetc(c, file);
     }
+    else
+    {
+        RESTORE_POSITION;
+        return FAIL;
+    }
 
     token[token_len] = 0;
     return OK;
@@ -144,6 +128,7 @@ int parseIdentifier(FILE* file, char* token)
 {
     ignoreWhitespace(file);
 
+    SAVE_POSITION;
     char c = (char)fgetc(file);
     int token_len = 0;
 
@@ -156,12 +141,40 @@ int parseIdentifier(FILE* file, char* token)
         }
         ungetc(c, file);
     }
+    else
+    {
+        RESTORE_POSITION;
+        return FAIL;
+    }
 
     token[token_len] = 0;
-    return token_len;
+    return OK;
 }
 
+int parseMathExpression(FILE* file, MathExpression* exp)
+{
+    char num1[16];
+    int result = parseNumber(file, num1);
+    if ( result == FAIL ) return FAIL;
+    exp->num1 = atoi(num1);
 
+    result = parseLiteral(file, "+");
+    if ( result == FAIL ) 
+    {
+        exp->op = 0;
+        return OK;
+    }
+
+    exp->op = '+';
+
+    char num2[16];
+    result = parseNumber(file, num2);
+    if ( result == FAIL ) return FAIL;
+
+    exp->num2 = atoi(num2);
+
+    return OK;
+}
 int parseBinding(FILE* file, Binding* b)
 {
     char token[256];
@@ -178,9 +191,10 @@ int parseBinding(FILE* file, Binding* b)
     result = parseLiteral(file, "->");
     if ( result == FAIL ) return FAIL;
 
-    result = parseNumber(file, token);
+    MathExpression me;
+    result = parseMathExpression(file, &me);
     if ( result == FAIL ) return FAIL;
-    b->number = atoi(token);
+    b->exp = me;
 
     return OK;
 }
@@ -204,9 +218,22 @@ void generate(Binding* b, char* output_file)
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
-    LLVMTypeRef intType = LLVMIntType(32);
-    LLVMValueRef val = LLVMConstInt(intType, b->number, true);
-    LLVMBuildRet(builder, val);
+    if ( b->exp.op == 0 )
+    {
+        LLVMTypeRef intType = LLVMIntType(32);
+        LLVMValueRef val = LLVMConstInt(intType, b->exp.num1, true);
+        LLVMBuildRet(builder, val);
+    }
+    else
+    {
+        LLVMTypeRef intType = LLVMIntType(32);
+        LLVMValueRef val1 = LLVMConstInt(intType, b->exp.num1, true);
+        LLVMValueRef val2 = LLVMConstInt(intType, b->exp.num2, true);
+
+        LLVMValueRef tmp = LLVMBuildAdd(builder, val1, val2, "temp");
+        LLVMBuildRet(builder, tmp);
+    }
+
 
     char *error = NULL;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
