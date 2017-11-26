@@ -10,7 +10,8 @@ fi
 cd "$(dirname "$0")"
 rm -rf build
 mkdir build
-clang++ -std=c11  `llvm-config --cflags` -x c src/dot.c `llvm-config --ldflags --libs core analysis native bitwriter --system-libs` -lm -o ./build/dot
+# -g to generate debug info
+clang++ -std=c11  `llvm-config --cflags` -g -x c -I src src/*.c `llvm-config --ldflags --libs core analysis native bitwriter --system-libs` -lm -o ./build/dot
 if [ $? -ne "0" ]; then
     exit
 fi
@@ -26,6 +27,7 @@ dotest() {
     file_name=$(basename ${test_file})
     file_name="${file_name%.*}"
 
+    # echo "./build/dot $rest_args $test_file"
     ./build/dot $rest_args $test_file
     ./$file_name
     actual=$?
@@ -51,6 +53,7 @@ dotest() {
 }
 
 
+echo
 start=$(millis)
 
 #do we need to run a single test?
