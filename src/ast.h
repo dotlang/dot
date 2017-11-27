@@ -26,10 +26,16 @@
 
 typedef struct Expression Expression;
 
-typedef struct
+typedef struct 
 {
-    Expression* lhs;
-    Expression* rhs;
+    Expression* expression;
+    int number;
+} MathFactor;
+
+typedef struct MathExpression
+{
+    MathFactor* lhs;
+    struct MathExpression* rhs;
     //can be "+"|"-"|"*"|"/"|"%"|"%%"
     char        op;
 } MathExpression;
@@ -37,7 +43,6 @@ typedef struct
 typedef struct Expression
 {
     MathExpression* math_expression;
-    int number;
 } Expression;
 
 typedef struct 

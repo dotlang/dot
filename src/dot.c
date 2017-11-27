@@ -162,33 +162,13 @@ int parseIdentifier(CompilationContext* context, FILE* file, char* token)
     return OK;
 }
 
-int parseMathExpression(FILE* file, MathExpression* exp)
-{
-    exp->lhs = ALLOC(Expression);
-
-    int result = parseExpression(file, exp->lhs);
-    if ( result == FAIL ) return FAIL;
-
-    const char* operators="+-*/";
-
-    result = parseMultipleChoiceLiteral(file, operators);
-    if ( result == FAIL ) return FAIL;
-
-    exp->op = operators[result];
-    
-    exp->rhs = ALLOC(Expression);
-    result = parseExpression(file, exp->rhs);
-    if ( result == FAIL ) return FAIL;
-
-    return OK;
-}
-
-int parseExpression(FILE* file, Expression* exp)
+int parseMathFactor(FILE* file, MathFactor* factor)
 {
     int result = parseLiteral(file, "(");
     if ( result != FAIL )
     {
-        result = parseExpression(file, exp);
+        factor->expression = ALLOC(Expression);
+        result = parseExpression(file, factor->expression);
         if ( result == FAIL ) return FAIL;
 
         result = parseLiteral(file, ")");
@@ -197,20 +177,47 @@ int parseExpression(FILE* file, Expression* exp)
         return OK;
     }
 
-    exp->math_expression = ALLOC(MathExpression);
-    result = parseMathExpression(file, exp->math_expression);
-
-    if ( result == OK ) return OK;
-    exp->math_expression = NULL;
-
     char num1[16];
     result = parseNumber(file, num1);
     if ( result != FAIL )
     {
-        exp->number = atoi(num1);
+        factor->number = atoi(num1);
         return OK;
     }
 
+    return OK;
+}
+
+int parseMathExpression(FILE* file, MathExpression* exp)
+{
+    exp->lhs = ALLOC(MathFactor);
+
+    int result = parseMathFactor(file, exp->lhs);
+    if ( result == FAIL ) return FAIL;
+
+    const char* ops="+-*/";
+
+    result = parseMultipleChoiceLiteral(file, ops);
+    if ( result == FAIL ) {
+        exp->op = 0;
+        return OK;
+    }
+
+    exp->op = ops [result];
+    
+    exp->rhs = ALLOC(MathExpression);
+    result = parseMathExpression(file, exp->rhs);
+    if ( result == FAIL ) return FAIL;
+
+    return OK;
+}
+
+int parseExpression(FILE* file, Expression* exp)
+{
+    exp->math_expression = ALLOC(MathExpression);
+    int result = parseMathExpression(file, exp->math_expression);
+
+    if ( result == FAIL ) return FAIL;
 
     return OK;
 }
@@ -252,40 +259,47 @@ int parseModule(CompilationContext* context, FILE* file, Module* module)
     return result;
 }
 
-LLVMValueRef generateExpression(CompilationContext* context, Expression* exp, LLVMBuilderRef builder)
+LLVMValueRef generateMathExpression(CompilationContext* context, MathExpression* exp, LLVMBuilderRef builder);
+
+LLVMValueRef generateMathFactor(CompilationContext* context, MathFactor* factor, LLVMBuilderRef builder)
 {
+    if ( factor->expression != NULL ) return generateMathExpression(context, factor->expression->math_expression, builder);
 
-    if ( exp->math_expression == NULL )
+    debugLog(context, "Generating code for simple exp: %d", factor->number);
+    LLVMTypeRef intType = LLVMIntType(32);
+    return LLVMConstInt(intType, factor->number, true);
+}
+
+LLVMValueRef generateMathExpression(CompilationContext* context, MathExpression* exp, LLVMBuilderRef builder)
+{
+    debugLog(context, "Generating code for math exp");
+
+    LLVMValueRef val1 = generateMathFactor(context, exp->lhs, builder);
+
+    char op = exp->op;
+
+    if ( op == 0 ) 
     {
-        debugLog(context, "Generating code for simple exp: %d", exp->number);
-        LLVMTypeRef intType = LLVMIntType(32);
-        return LLVMConstInt(intType, exp->number, true);
+        return val1;
     }
-    else
+
+    LLVMValueRef val2 = generateMathExpression(context, exp->rhs, builder);
+
+    if ( op == '+' )
     {
-        debugLog(context, "Generating code for math exp");
-
-        LLVMValueRef val1 = generateExpression(context, exp->math_expression->lhs, builder);
-        LLVMValueRef val2 = generateExpression(context, exp->math_expression->rhs, builder);
-
-        char op = exp->math_expression->op;
-
-        if ( op == '+' )
-        {
-            return LLVMBuildAdd(builder, val1, val2, "temp");
-        }
-        else if ( op == '-' )
-        {
-            return LLVMBuildSub(builder, val1, val2, "temp");
-        }
-        else if ( op == '*' )
-        {
-            return LLVMBuildMul(builder, val1, val2, "temp");
-        }
-        else if ( op == '/' )
-        {
-            return LLVMBuildSDiv(builder, val1, val2, "temp");
-        }
+        return LLVMBuildAdd(builder, val1, val2, "temp");
+    }
+    else if ( op == '-' )
+    {
+        return LLVMBuildSub(builder, val1, val2, "temp");
+    }
+    else if ( op == '*' )
+    {
+        return LLVMBuildMul(builder, val1, val2, "temp");
+    }
+    else if ( op == '/' )
+    {
+        return LLVMBuildSDiv(builder, val1, val2, "temp");
     }
 
     abort();
@@ -303,7 +317,7 @@ void generate(CompilationContext* context, Module* m, char* output_file)
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry");
     LLVMPositionBuilderAtEnd(builder, entry);
 
-    LLVMBuildRet(builder, generateExpression(context, m->items_head->static_binding->function_decl->expression, builder));
+    LLVMBuildRet(builder, generateMathExpression(context, m->items_head->static_binding->function_decl->expression->math_expression, builder));
 
     char *error = NULL;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
