@@ -251,7 +251,7 @@ int parseBinding(CompilationContext* context, StaticBinding* b)
 int parseModule(CompilationContext* context, Module* module)
 {
     StaticBinding* binding = ALLOC(StaticBinding);
-    _ModuleItem* item = ALLOC(_ModuleItem);
+    ModuleItem* item = ALLOC(ModuleItem);
     item->static_binding = binding;
 
     module->items_head = module->items_tail = item;
