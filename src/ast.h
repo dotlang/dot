@@ -13,13 +13,16 @@
 
 typedef struct
 {
-    char *input_file_path;
-    char input_file_name[1024];
+    char* input_file_path;
+    char  input_file_name[1024];
     FILE* input_file;
-    int  debug_mode;
+    int   debug_mode;
 
     char output_dir[1024];
     char output_file_path[1024];
+
+    LLVMModuleRef module;
+    LLVMBuilderRef builder;
 
 } CompilationContext;
 
@@ -67,9 +70,10 @@ typedef struct Expression
 
 typedef struct MathExpression
 {
-    MathFactor* lhs;
-    struct MathExpression* rhs;
+    MathFactor* factor;
+    struct MathExpression* expression;
     //can be "+"|"-"|"*"|"/"|"%"|"%%"
+    //or 0 if its a simple number
     char        op;
 } MathExpression;
 
