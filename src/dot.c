@@ -114,6 +114,12 @@ int main(int argc, char** argv)
 
     context.input_file = fopen(context.input_file_path, "r");
 
+    if ( context.input_file == NULL )
+    {
+        printf("Could not open input file: %s\n", context.input_file_path);
+        return 1;
+    }
+
     Module module;
     int result = parseModule(&context, &module);
     fclose(context.input_file);

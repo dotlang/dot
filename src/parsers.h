@@ -58,8 +58,7 @@ int parseMathExpression(CompilationContext* context, MathExpression* exp)
     return OK;
 }
 
-//Expression         = BINDING_NAME | FunctionDecl | FnCall | ExpressionLiteral | StructAccess |
-//                     OperatorExpression | MathExpression | SequenceMapReadOp | BoolExpression
+//Expression         = MathExpression 
 int parseExpression(CompilationContext* context, Expression* exp)
 {
     exp->math_expression = ALLOC(MathExpression);
@@ -72,7 +71,9 @@ int parseExpression(CompilationContext* context, Expression* exp)
     return OK;
 }
 
-int parseBinding(CompilationContext* context, StaticBinding* b)
+//StaticBinding  = BindingLhs+ ":=" ( FunctionDecl )
+//FunctionDecl   = "(" ") ->" Expression
+int parseStaticBinding(CompilationContext* context, StaticBinding* b)
 {
     char token[256];
     int result = parseIdentifier(context, token);
@@ -97,6 +98,7 @@ int parseBinding(CompilationContext* context, StaticBinding* b)
     return OK;
 }
 
+//Module            = { ( StaticBinding ) }
 int parseModule(CompilationContext* context, Module* module)
 {
     StaticBinding* binding = ALLOC(StaticBinding);
@@ -104,7 +106,7 @@ int parseModule(CompilationContext* context, Module* module)
     item->static_binding = binding;
 
     module->items_head = module->items_tail = item;
-    int result = parseBinding(context, binding);
+    int result = parseStaticBinding(context, binding);
 
     return result;
 }
