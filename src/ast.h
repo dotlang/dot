@@ -1,6 +1,28 @@
 #ifndef __AST_H__
 #define __AST_H__
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#define OK   1
+#define FAIL -1
+
+#define ALLOC(T)  (T*)calloc(1, sizeof(T))
+#define SAVE_POSITION long initial_position = ftell(context->input_file)
+#define RESTORE_POSITION fseek(context->input_file, initial_position, SEEK_SET)
+
+typedef struct
+{
+    char *input_file_path;
+    char input_file_name[1024];
+    FILE* input_file;
+    int  debug_mode;
+
+    char output_dir[1024];
+    char output_file_path[1024];
+
+} CompilationContext;
+
 typedef struct ModuleItem ModuleItem;
 typedef struct StaticBinding StaticBinding;
 typedef struct Expression Expression;
@@ -56,9 +78,6 @@ typedef struct MathFactor
     Expression* expression;
     int number;
 } MathFactor;
-
-
-
 
 
 #endif
