@@ -16,11 +16,10 @@
 #define FAIL -1
 
 #define ALLOC(T)  (T*)calloc(1, sizeof(T))
-#define SAVE_POSITION long initial_position = ftell(file)
-#define RESTORE_POSITION fseek(file, initial_position, SEEK_SET)
+#define SAVE_POSITION long initial_position = ftell(context->input_file)
+#define RESTORE_POSITION fseek(context->input_file, initial_position, SEEK_SET)
 
 
-int parseExpression(FILE*, Expression*);
 
 typedef struct
 {
@@ -33,6 +32,8 @@ typedef struct
     char output_file_path[1024];
 
 } CompilationContext;
+
+int parseExpression(CompilationContext*, Expression*);
 
 void debugLog(CompilationContext* context, const char* format, ...)
 {
@@ -54,29 +55,29 @@ void debugLog(CompilationContext* context, const char* format, ...)
 	printf("%s\n", result);
 }
 
-void ignoreWhitespace(FILE* file)
+void ignoreWhitespace(CompilationContext* context)
 {
-    char c = (char)fgetc(file);
+    char c = (char)fgetc(context->input_file);
     char temp[1024];
 
     while ( isspace(c) || c == '#' ) 
     {
         if ( c == EOF ) break;
-        if ( c == '#' ) fgets(temp, 1024, file);
+        if ( c == '#' ) fgets(temp, 1024, context->input_file);
 
-        c = (char)fgetc(file);
+        c = (char)fgetc(context->input_file);
     }
 
-    ungetc(c, file);
+    ungetc(c, context->input_file);
 }
 
 //Try to read any of given characters. Return index of matching character
-int parseMultipleChoiceLiteral(FILE* file, const char* choices)
+int parseMultipleChoiceLiteral(CompilationContext* context, const char* choices)
 {
-    ignoreWhitespace(file);
+    ignoreWhitespace(context);
 
     SAVE_POSITION;
-    char c = (char)fgetc(file);
+    char c = (char)fgetc(context->input_file);
     int choice_count = strlen(choices);
 
     for(int i=0;i<choice_count;i++)
@@ -88,14 +89,14 @@ int parseMultipleChoiceLiteral(FILE* file, const char* choices)
     return FAIL;
 }
 
-int parseLiteral(FILE* file, const char* literal)
+int parseLiteral(CompilationContext* context, const char* literal)
 {
-    ignoreWhitespace(file);
+    ignoreWhitespace(context);
 
     SAVE_POSITION;
     for(size_t i=0;i<strlen(literal);i++)
     {
-        char c = (char)fgetc(file);
+        char c = (char)fgetc(context->input_file);
         if ( c != literal[i] ) 
         {
             RESTORE_POSITION;
@@ -106,22 +107,22 @@ int parseLiteral(FILE* file, const char* literal)
     return OK;
 }
 
-int parseNumber(FILE* file, char* token)
+int parseNumber(CompilationContext* context, char* token)
 {
-    ignoreWhitespace(file);
+    ignoreWhitespace(context);
     SAVE_POSITION;
 
     int token_len = 0;
 
-    char c = (char)fgetc(file);
+    char c = (char)fgetc(context->input_file);
     if ( isdigit(c) )
     {
         while ( c != EOF && isdigit(c) ) 
         {
             token[token_len++] = c;
-            c = (char)fgetc(file);
+            c = (char)fgetc(context->input_file);
         }
-        ungetc(c, file);
+        ungetc(c, context->input_file);
     }
     else
     {
@@ -133,12 +134,12 @@ int parseNumber(FILE* file, char* token)
     return OK;
 }
 
-int parseIdentifier(CompilationContext* context, FILE* file, char* token)
+int parseIdentifier(CompilationContext* context, char* token)
 {
-    ignoreWhitespace(file);
+    ignoreWhitespace(context);
 
     SAVE_POSITION;
-    char c = (char)fgetc(file);
+    char c = (char)fgetc(context->input_file);
     int token_len = 0;
 
     if ( isalpha(c) )
@@ -146,9 +147,9 @@ int parseIdentifier(CompilationContext* context, FILE* file, char* token)
         while ( c != EOF && isalpha(c) )
         {
             token[token_len++] = c;
-            c = (char)fgetc(file);
+            c = (char)fgetc(context->input_file);
         }
-        ungetc(c, file);
+        ungetc(c, context->input_file);
     }
     else
     {
@@ -162,23 +163,23 @@ int parseIdentifier(CompilationContext* context, FILE* file, char* token)
     return OK;
 }
 
-int parseMathFactor(FILE* file, MathFactor* factor)
+int parseMathFactor(CompilationContext* context, MathFactor* factor)
 {
-    int result = parseLiteral(file, "(");
+    int result = parseLiteral(context, "(");
     if ( result != FAIL )
     {
         factor->expression = ALLOC(Expression);
-        result = parseExpression(file, factor->expression);
+        result = parseExpression(context, factor->expression);
         if ( result == FAIL ) return FAIL;
 
-        result = parseLiteral(file, ")");
+        result = parseLiteral(context, ")");
         if ( result == FAIL ) return FAIL;
 
         return OK;
     }
 
     char num1[16];
-    result = parseNumber(file, num1);
+    result = parseNumber(context, num1);
     if ( result != FAIL )
     {
         factor->number = atoi(num1);
@@ -188,16 +189,16 @@ int parseMathFactor(FILE* file, MathFactor* factor)
     return OK;
 }
 
-int parseMathExpression(FILE* file, MathExpression* exp)
+int parseMathExpression(CompilationContext* context, MathExpression* exp)
 {
     exp->lhs = ALLOC(MathFactor);
 
-    int result = parseMathFactor(file, exp->lhs);
+    int result = parseMathFactor(context, exp->lhs);
     if ( result == FAIL ) return FAIL;
 
     const char* ops="+-*/";
 
-    result = parseMultipleChoiceLiteral(file, ops);
+    result = parseMultipleChoiceLiteral(context, ops);
     if ( result == FAIL ) {
         exp->op = 0;
         return OK;
@@ -206,55 +207,55 @@ int parseMathExpression(FILE* file, MathExpression* exp)
     exp->op = ops [result];
     
     exp->rhs = ALLOC(MathExpression);
-    result = parseMathExpression(file, exp->rhs);
+    result = parseMathExpression(context, exp->rhs);
     if ( result == FAIL ) return FAIL;
 
     return OK;
 }
 
-int parseExpression(FILE* file, Expression* exp)
+int parseExpression(CompilationContext* context, Expression* exp)
 {
     exp->math_expression = ALLOC(MathExpression);
-    int result = parseMathExpression(file, exp->math_expression);
+    int result = parseMathExpression(context, exp->math_expression);
 
     if ( result == FAIL ) return FAIL;
 
     return OK;
 }
 
-int parseBinding(CompilationContext* context, FILE* file, StaticBinding* b)
+int parseBinding(CompilationContext* context, StaticBinding* b)
 {
     char token[256];
-    int result = parseIdentifier(context, file, token);
+    int result = parseIdentifier(context, token);
     if ( result == FAIL ) return FAIL;
     strcpy(b->lhs, token);
 
-    result = parseLiteral(file, ":=");
+    result = parseLiteral(context, ":=");
     if ( result == FAIL ) return FAIL;
 
-    result = parseLiteral(file, "()");
+    result = parseLiteral(context, "()");
     if ( result == FAIL ) return FAIL;
 
-    result = parseLiteral(file, "->");
+    result = parseLiteral(context, "->");
     if ( result == FAIL ) return FAIL;
 
     b->function_decl = ALLOC(FunctionDecl);
     b->function_decl->expression = ALLOC(Expression);
 
-    result = parseExpression(file, b->function_decl->expression);
+    result = parseExpression(context, b->function_decl->expression);
     if ( result == FAIL ) return FAIL;
 
     return OK;
 }
 
-int parseModule(CompilationContext* context, FILE* file, Module* module)
+int parseModule(CompilationContext* context, Module* module)
 {
     StaticBinding* binding = ALLOC(StaticBinding);
     _ModuleItem* item = ALLOC(_ModuleItem);
     item->static_binding = binding;
 
     module->items_head = module->items_tail = item;
-    int result = parseBinding(context, file, binding);
+    int result = parseBinding(context, binding);
 
     return result;
 }
@@ -353,7 +354,7 @@ int main(int argc, char** argv)
     context.input_file = fopen(context.input_file_path, "r");
 
     Module module;
-    int result = parseModule(&context, context.input_file, &module);
+    int result = parseModule(&context, &module);
     fclose(context.input_file);
     debugLog(&context, "parse result is: %s", (result == FAIL)?"FAIL":"OK");
 
