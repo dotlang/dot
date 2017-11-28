@@ -5,10 +5,10 @@
 #include "basic_parsers.h"
 #include "debug_helpers.h"
 
-int parseExpression(CompilationContext*, Expression*);
+int parseExpression(Context*, Expression*);
 
 //MathFactor         = "(" Expression ")" | NUMBER
-int parseMathFactor(CompilationContext* context, MathFactor* factor)
+int parseMathFactor(Context* context, MathFactor* factor)
 {
     int result = parseLiteral(context, "(");
     if ( result != FAIL )
@@ -35,7 +35,7 @@ int parseMathFactor(CompilationContext* context, MathFactor* factor)
 }
 
 //MathExpression     = MathFactor ("+"|"-"|"*"|"/"|"%"|"%%") MathExpression | MathFactor
-int parseMathExpression(CompilationContext* context, MathExpression* exp)
+int parseMathExpression(Context* context, MathExpression* exp)
 {
     exp->factor = ALLOC(MathFactor);
     int result = parseMathFactor(context, exp->factor);
@@ -59,7 +59,7 @@ int parseMathExpression(CompilationContext* context, MathExpression* exp)
 }
 
 //Expression         = MathExpression 
-int parseExpression(CompilationContext* context, Expression* exp)
+int parseExpression(Context* context, Expression* exp)
 {
     exp->math_expression = ALLOC(MathExpression);
     int result = parseMathExpression(context, exp->math_expression);
@@ -73,7 +73,7 @@ int parseExpression(CompilationContext* context, Expression* exp)
 
 //StaticBinding  = BindingLhs+ ":=" ( FunctionDecl )
 //FunctionDecl   = "(" ") ->" Expression
-int parseStaticBinding(CompilationContext* context, StaticBinding* b)
+int parseStaticBinding(Context* context, StaticBinding* b)
 {
     char token[256];
     int result = parseIdentifier(context, token);
@@ -99,7 +99,7 @@ int parseStaticBinding(CompilationContext* context, StaticBinding* b)
 }
 
 //Module            = { ( StaticBinding ) }
-int parseModule(CompilationContext* context, Module* module)
+int parseModule(Context* context, Module* module)
 {
     StaticBinding* binding = ALLOC(StaticBinding);
     ModuleItem* item = ALLOC(ModuleItem);

@@ -1,10 +1,10 @@
 #ifndef __DEBUG_HELPERS_H__
 #define __DEBUG_HELPERS_H__
 
-void debugMathExpression(CompilationContext* context, MathExpression* math_expression);
-void debugMathFactor(CompilationContext* context, MathFactor* factor);
+void debugMathExpression(Context* context, MathExpression* math_expression);
+void debugMathFactor(Context* context, MathFactor* factor);
 
-void debugLog(CompilationContext* context, const char* format, ...)
+void debugLog(Context* context, const char* format, ...)
 {
     if ( context->debug_mode == 0 ) return;
 	char result[1024];
@@ -24,7 +24,7 @@ void debugLog(CompilationContext* context, const char* format, ...)
 	printf("%s\n", result);
 }
 
-void debugLogNoNewLine(CompilationContext* context, const char* format, ...)
+void debugLogNoNewLine(Context* context, const char* format, ...)
 {
     if ( context->debug_mode == 0 ) return;
 	char result[1024];
@@ -44,20 +44,20 @@ void debugLogNoNewLine(CompilationContext* context, const char* format, ...)
 	printf("%s", result);
 }
 
-void debugLogAddNewLine(CompilationContext* context)
+void debugLogAddNewLine(Context* context)
 {
     if ( context->debug_mode == 0 ) return;
 	printf("\n");
 }
 
-void debugExpression(CompilationContext* context, Expression* expression)
+void debugExpression(Context* context, Expression* expression)
 {
     if ( context->debug_mode == 0 ) return;
 
     debugMathExpression(context, expression->math_expression);
 }
 
-void debugMathExpression(CompilationContext* context, MathExpression* math_expression)
+void debugMathExpression(Context* context, MathExpression* math_expression)
 {
     if ( context->debug_mode == 0 ) return;
 
@@ -73,7 +73,7 @@ void debugMathExpression(CompilationContext* context, MathExpression* math_expre
     debugLogNoNewLine(context, ")");
 }
 
-void debugMathFactor(CompilationContext* context, MathFactor* factor)
+void debugMathFactor(Context* context, MathFactor* factor)
 {
     if ( factor->expression != NULL )
     {

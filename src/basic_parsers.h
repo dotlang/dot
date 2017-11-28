@@ -4,7 +4,7 @@
 #include "ast.h"
 #include "debug_helpers.h"
 
-void ignoreWhitespace(CompilationContext* context)
+void ignoreWhitespace(Context* context)
 {
     char c = (char)fgetc(context->input_file);
     char temp[1024];
@@ -21,7 +21,7 @@ void ignoreWhitespace(CompilationContext* context)
 }
 
 //Try to read any of given characters. Return index of matching character
-int parseMultipleChoiceLiteral(CompilationContext* context, const char* choices)
+int parseMultipleChoiceLiteral(Context* context, const char* choices)
 {
     ignoreWhitespace(context);
 
@@ -38,7 +38,7 @@ int parseMultipleChoiceLiteral(CompilationContext* context, const char* choices)
     return FAIL;
 }
 
-int parseLiteral(CompilationContext* context, const char* literal)
+int parseLiteral(Context* context, const char* literal)
 {
     ignoreWhitespace(context);
 
@@ -56,7 +56,7 @@ int parseLiteral(CompilationContext* context, const char* literal)
     return OK;
 }
 
-int parseNumber(CompilationContext* context, char* token)
+int parseNumber(Context* context, char* token)
 {
     ignoreWhitespace(context);
     SAVE_POSITION;
@@ -83,7 +83,7 @@ int parseNumber(CompilationContext* context, char* token)
     return OK;
 }
 
-int parseIdentifier(CompilationContext* context, char* token)
+int parseIdentifier(Context* context, char* token)
 {
     ignoreWhitespace(context);
 

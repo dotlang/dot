@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "llvm-c/Core.h"
+
 #define OK   1
 #define FAIL -1
 
@@ -17,14 +19,15 @@ typedef struct
     char  input_file_name[1024];
     FILE* input_file;
     int   debug_mode;
+    char  output_file_path[1024];
 
-    char output_dir[1024];
-    char output_file_path[1024];
+    char llvmir_dir[1024];
+    char llvmir_file_path[1024];
 
     LLVMModuleRef module;
     LLVMBuilderRef builder;
 
-} CompilationContext;
+} Context;
 
 typedef struct ModuleItem ModuleItem;
 typedef struct StaticBinding StaticBinding;
