@@ -1,3 +1,5 @@
+notifications:
+    email: false
 language: c
 compiler: clang
 script: ./x.sh
