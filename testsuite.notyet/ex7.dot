@@ -1,0 +1,7 @@
+# vi:syntax=python
+# 10
+main := () ->
+{
+    x := 10
+    return x
+}

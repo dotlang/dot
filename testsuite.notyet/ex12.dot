@@ -1,0 +1,11 @@
+# vi:syntax=python
+# 20
+main := () ->
+{
+    x := 19
+    (x>5 and x>100) return 10
+    (x>5 and x<=100) return 20
+    (x<=5) return 10
+
+    return 75
+}

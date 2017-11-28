@@ -1,0 +1,2 @@
+# vi:syntax=python
+main := () -> 1+2*3

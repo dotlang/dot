@@ -1,0 +1,2 @@
+# vi:syntax=python
+main := () -> 63+     16

@@ -1,0 +1,9 @@
+# vi:syntax=python
+# 66
+main := () ->
+{
+    x := 10
+
+    (x<5) return 67
+    return 66
+}

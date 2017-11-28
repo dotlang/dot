@@ -1,0 +1,10 @@
+# vi:syntax=python
+# 1
+main := () ->
+{
+    x := 6
+    y := 3
+    z := 10
+
+    return x + y - (z / 5) * 4
+}
