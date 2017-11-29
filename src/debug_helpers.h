@@ -4,7 +4,7 @@
 #include "ast.h"
 
 void debugLog(Context*, const char*, ...);
-void debugExpression(Context*, Expression*);
+/* void debugExpression(Context*, Expression*); */
 
 #endif
 

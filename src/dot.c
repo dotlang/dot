@@ -9,7 +9,7 @@
 #include "ast.h"
 #include "debug_helpers.h"
 #include "parsers.h"
-#include "basic_compilers.h"
+#include "compilers.h"
 
 void printUsage()
 {
@@ -18,16 +18,16 @@ void printUsage()
     printf("If DOT_VERBOSE_COMPILE is set to one, verbose output will be shown\n");
 }
 
-int checkDebugMode()
+void checkDebugMode(Context* context)
 {
-    const char* s = getenv("DOT_VERBOSE_COMPILE");
+    const char* s = getenv("DOT_VERBOSE_LOG");
 
     if ( s != NULL && strcmp(s, "1") == 0 ) 
     {
-        return 1;
+        context->debug_mode = 1;
     }
 
-    return 0;
+    context->debug_mode = 0;
 }
 
 int openInputFile(Context* context, char* arg)
@@ -82,7 +82,7 @@ void cleanupTemps(Context* context)
     debugLog(context, "cleaning up temp files...");
     char cleanup_cmd[1024];
     sprintf(cleanup_cmd, "rm -rf %s", context->llvmir_dir);
-    system(cleanup_cmd);
+    /* system(cleanup_cmd); */
     debugLog(context, "cleanup finished.");
 }
 
@@ -95,7 +95,7 @@ int main(int argc, char** argv)
     }
 
 	Context context;
-    context.debug_mode = checkDebugMode();
+    checkDebugMode(&context);
     
     int error_code = openInputFile(&context, argv[1]);
     if ( error_code == FAIL ) return 1;

@@ -26,21 +26,18 @@ void ignoreWhitespace(Context* context)
     ungetc(c, context->input_file);
 }
 
-//Try to read any of given characters. Return index of matching character
-int parseMultipleChoiceLiteral(Context* context, const char* choices)
+//Try to read any of given characters. Return index of matching choice
+int parseMultipleChoiceLiteral(Context* context, const int choice_count, const char** choices)
 {
     ignoreWhitespace(context);
 
-    SAVE_POSITION;
-    char c = (char)fgetc(context->input_file);
-    int choice_count = strlen(choices);
-
     for(int i=0;i<choice_count;i++)
     {
-        if ( c == choices[i] ) return i;
+        int result = parseLiteral(context, choices[i]);
+
+        if ( result == OK ) return i;
     }
 
-    RESTORE_POSITION;
     return FAIL;
 }
 

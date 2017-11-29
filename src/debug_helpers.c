@@ -1,7 +1,7 @@
 #include "debug_helpers.h"
 
-void debugMathExpression(Context* context, MathExpression* math_expression);
-void debugMathFactor(Context* context, MathFactor* factor);
+/* void debugMathExpression(Context* context, MathExpression* math_expression); */
+/* void debugMathFactor(Context* context, MathFactor* factor); */
 
 void debugLog(Context* context, const char* format, ...)
 {
@@ -49,38 +49,38 @@ void debugLogAddNewLine(Context* context)
 	printf("\n");
 }
 
-void debugExpression(Context* context, Expression* expression)
-{
-    if ( context->debug_mode == 0 ) return;
+/* void debugExpression(Context* context, Expression* expression) */
+/* { */
+/*     if ( context->debug_mode == 0 ) return; */
 
-    debugMathExpression(context, expression->math_expression);
-}
+/*     debugMathExpression(context, expression->math_expression); */
+/* } */
 
-void debugMathExpression(Context* context, MathExpression* math_expression)
-{
-    if ( context->debug_mode == 0 ) return;
+/* void debugMathExpression(Context* context, MathExpression* math_expression) */
+/* { */
+/*     if ( context->debug_mode == 0 ) return; */
 
-    debugLogNoNewLine(context, "(");
-    debugMathFactor(context, math_expression->factor);
+/*     debugLogNoNewLine(context, "("); */
+/*     debugMathFactor(context, math_expression->factor); */
 
-    if ( math_expression->expression != NULL )
-    {
-        debugLogNoNewLine(context, "%c", math_expression->op);
-        debugMathExpression(context, math_expression->expression);
-    }
+/*     if ( math_expression->expression != NULL ) */
+/*     { */
+/*         debugLogNoNewLine(context, "%c", math_expression->op); */
+/*         debugMathExpression(context, math_expression->expression); */
+/*     } */
 
-    debugLogNoNewLine(context, ")");
-}
+/*     debugLogNoNewLine(context, ")"); */
+/* } */
 
-void debugMathFactor(Context* context, MathFactor* factor)
-{
-    if ( factor->expression != NULL )
-    {
-        debugExpression(context, factor->expression);
-    }
-    else
-    {
-        debugLogNoNewLine(context, "%d", factor->number);
-    }
-}
+/* void debugMathFactor(Context* context, MathFactor* factor) */
+/* { */
+/*     if ( factor->expression != NULL ) */
+/*     { */
+/*         debugExpression(context, factor->expression); */
+/*     } */
+/*     else */
+/*     { */
+/*         debugLogNoNewLine(context, "%d", factor->number); */
+/*     } */
+/* } */
 
