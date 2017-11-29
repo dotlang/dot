@@ -10,8 +10,13 @@
 #define FAIL -1
 
 #define ALLOC(T)  (T*)calloc(1, sizeof(T))
+//#define ALLOC(V, T)  T* V = (T*)calloc(1, sizeof(T))
+#define PARSE(R, F) R = F(context); if ( R == NULL ) return NULL
+
 #define SAVE_POSITION long initial_position = ftell(context->input_file)
 #define RESTORE_POSITION fseek(context->input_file, initial_position, SEEK_SET)
+#define CHECK_FAIL(x) if ( x == FAIL ) return NULL
+#define CHECK_NULL(x) if ( x == NULL ) return NULL
 
 #define OP_NOP 0
 #define OP_AND 1

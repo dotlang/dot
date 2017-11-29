@@ -6,209 +6,205 @@
 #include "basic_parsers.h"
 #include "debug_helpers.h"
 
-/* int parseExpression(Context*, Expression*); */
-
-/* //MathFactor         = "(" Expression ")" | NUMBER */
-/* int parseMathFactor(Context* context, MathFactor* factor) */
-/* { */
-/*     int result = parseLiteral(context, "("); */
-/*     if ( result != FAIL ) */
-/*     { */
-/*         factor->expression = ALLOC(Expression); */
-/*         result = parseExpression(context, factor->expression); */
-/*         if ( result == FAIL ) return FAIL; */
-
-/*         result = parseLiteral(context, ")"); */
-/*         if ( result == FAIL ) return FAIL; */
-
-/*         return OK; */
-/*     } */
-
-/*     char num1[16]; */
-/*     result = parseNumber(context, num1); */
-/*     if ( result != FAIL ) */
-/*     { */
-/*         factor->number = atoi(num1); */
-/*         return OK; */
-/*     } */
-
-/*     return OK; */
-/* } */
-
-/* //MathExpression     = MathFactor ("+"|"-"|"*"|"/"|"%"|"%%") MathExpression | MathFactor */
-/* int parseMathExpression(Context* context, MathExpression* exp) */
-/* { */
-/*     exp->factor = ALLOC(MathFactor); */
-/*     int result = parseMathFactor(context, exp->factor); */
-/*     if ( result == FAIL ) return FAIL; */
-
-/*     const char* ops[] = { "%%", "+", "-", "*", "/", "%" }; */
-/*     result = parseMultipleChoiceLiteral(context, 6, ops); */
-/*     debugLog(context, "result of operator check: %d", result); */
-
-/*     if ( result == FAIL ) { */
-/*         exp->op = OP_NOP; */
-/*         return OK; */
-/*     } */
-/*     exp->op = result; */
-    
-/*     exp->expression = ALLOC(MathExpression); */
-/*     result = parseMathExpression(context, exp->expression); */
-/*     if ( result == FAIL ) return FAIL; */
-
-/*     return OK; */
-/* } */
-
-int parseBasicExpression(Context* context, BasicExpression* basic_expression)
+BasicExpression* parseBasicExpression(Context* context)
 {
+    BasicExpression* basic_expression = ALLOC(BasicExpression);
+
     char num[16];
     int result = parseNumber(context, num);
     if ( result != FAIL )
     {
         basic_expression->number = atoi(num);
-        return OK;
+        return basic_expression;
     }
 
     //TODO: complete this part
     basic_expression->number = 19;
-    return OK;
+    return basic_expression;
 
 }
 
-int parsePrimaryExpression(Context* context, PrimaryExpression* primary_expression)
+PrimaryExpression* parsePrimaryExpression(Context* context)
 {
-    primary_expression->basic_expression = ALLOC(BasicExpression);
-    int result = parseBasicExpression(context, primary_expression->basic_expression);
-
-    if ( result == FAIL ) return FAIL;
+    PrimaryExpression* primary_expression = ALLOC(PrimaryExpression);
+    PARSE(primary_expression->basic_expression, parseBasicExpression);
 
     struct PrimaryExpressionElement* element = ALLOC(struct PrimaryExpressionElement);
     element->op = OP_NOP;
     //TODO: scan for ( or dot or [
     //
     
-    return OK;
+    return primary_expression;
 }
 
-int parseUnaryExpression(Context* context, UnaryExpression* unary_expression)
+UnaryExpression* parseUnaryExpression(Context* context)
 {
+    UnaryExpression* unary_expression = ALLOC(UnaryExpression);
+
     unary_expression->op = OP_NOP;
-    unary_expression->primary_expression = ALLOC(PrimaryExpression);
 
-    return parsePrimaryExpression(context, unary_expression->primary_expression);
+    unary_expression->primary_expression = parsePrimaryExpression(context);
     //TODO: scan for operators
+    return unary_expression;
 }
 
-int parseMulExpression(Context* context, MulExpression* mul_expression)
+MulExpression* parseMulExpression(Context* context)
 {
+    MulExpression* mul_expression = ALLOC(MulExpression);
     struct MulExpressionElement* element = ALLOC(struct MulExpressionElement);
 
     mul_expression->first_element = mul_expression->last_element = element;
-    element->unary_expression = ALLOC(UnaryExpression);
 
     element->op = OP_NOP;
-    return parseUnaryExpression(context, element->unary_expression);
+    element->unary_expression =  parseUnaryExpression(context);
+
     //TODO: scan for operators
+    return mul_expression;
 }
 
-int parseAddExpression(Context* context, AddExpression* add_expression)
+AddExpression* parseAddExpression(Context* context)
 {
+    AddExpression* add_expression = ALLOC(AddExpression);
+
     struct AddExpressionElement* element = ALLOC(struct AddExpressionElement);
 
     add_expression->first_element = add_expression->last_element = element;
-    element->mul_expression = ALLOC(MulExpression);
+    element->mul_expression = parseMulExpression(context);
 
+    //for the first element there is no op
     element->op = OP_NOP;
-    return parseMulExpression(context, element->mul_expression);
+
+    const char* ops[] = { "+", "-" };
+    int result = parseMultipleChoiceLiteral(context, 2, ops);
+
+    //it's fine if we no longer see operators
+    while ( result == OK ) 
+    {
+        element->next = ALLOC(struct AddExpressionElement);
+        element = element->next;
+
+        element->op = (result==0) ? OP_ADD:OP_SUB;
+        element->mul_expression = parseMulExpression(context);
+
+        CHECK_FAIL(result);
+
+        add_expression->last_element = element;
+
+        result = parseMultipleChoiceLiteral(context, 2, ops);
+    }
+
     //TODO: scan for operators
+    return add_expression;
 }
 
-int parseShiftExpression(Context* context, ShiftExpression* shift_expression)
+ShiftExpression* parseShiftExpression(Context* context)
 {
+    ShiftExpression* shift_expression = ALLOC(ShiftExpression);
+
     struct ShiftExpressionElement* element = ALLOC(struct ShiftExpressionElement);
 
     shift_expression->first_element = shift_expression->last_element = element;
-    element->add_expression = ALLOC(AddExpression);
 
     element->op = OP_NOP;
-    return parseAddExpression(context, element->add_expression);
+    element->add_expression = parseAddExpression(context);
     //TODO: scan for operators
+    //
+    return shift_expression;
 }
 
-int parseCmpExpression(Context* context, CmpExpression* cmp_expression)
+CmpExpression* parseCmpExpression(Context* context)
 {
+    CmpExpression* cmp_expression = ALLOC(CmpExpression);
+
     struct CmpExpressionElement* element = ALLOC(struct CmpExpressionElement);
 
     cmp_expression->first_element = cmp_expression->last_element = element;
-    element->shift_expression = ALLOC(ShiftExpression);
 
     element->op = OP_NOP;
-    return parseShiftExpression(context, element->shift_expression);
+    element->shift_expression = parseShiftExpression(context);
+    CHECK_NULL(element->shift_expression);
     //TODO: scan for operators
+    return cmp_expression;
 }
 
-int parseEqExpression(Context* context, EqExpression* eq_expression)
+EqExpression* parseEqExpression(Context* context)
 {
+    EqExpression* eq_expression = ALLOC(EqExpression);
+
     struct EqExpressionElement* element = ALLOC(struct EqExpressionElement);
 
     eq_expression->first_element = eq_expression->last_element = element;
-    element->cmp_expression = ALLOC(CmpExpression);
 
     element->op = OP_NOP;
-    return parseCmpExpression(context, element->cmp_expression);
+    element->cmp_expression = parseCmpExpression(context);
+    CHECK_NULL(element->cmp_expression);
     //TODO: scan for operators
+    
+    return eq_expression;
 }
 
 //Expression         = MathExpression 
-int parseExpression(Context* context, Expression* exp)
+Expression* parseExpression(Context* context)
 {
+    Expression* exp = ALLOC(Expression);
     struct ExpressionElement* element = ALLOC(struct ExpressionElement);
 
     exp->first_element = exp->last_element = element;
-    element->eq_expression = ALLOC(EqExpression);
 
     element->op = OP_NOP;
-    return parseEqExpression(context, element->eq_expression);
+    element->eq_expression = parseEqExpression(context);
+    CHECK_NULL(element->eq_expression);
     //TODO: scan for and/or/xor/...
+    
+    return exp;
 }
 
-int parseFunctionDecl(Context* context, FunctionDecl* function_decl)
+FunctionDecl* parseFunctionDecl(Context* context)
 {
+    FunctionDecl* function_decl = ALLOC(FunctionDecl);
+
     int result = parseLiteral(context, "()");
-    if ( result == FAIL ) return FAIL;
+    CHECK_FAIL(result);
 
     result = parseLiteral(context, "->");
-    if ( result == FAIL ) return FAIL;
+    CHECK_FAIL(result);
 
-    function_decl->expression = ALLOC(Expression);
+    function_decl->expression = parseExpression(context);
+    CHECK_NULL(function_decl->expression);
 
-    return parseExpression(context, function_decl->expression);
+    return function_decl;
 }
 
 //StaticBinding  = BindingLhs+ ":=" ( FunctionDecl )
 //FunctionDecl   = "(" ") ->" Expression
-int parseBinding(Context* context, Binding* b)
+Binding* parseBinding(Context* context)
 {
+    Binding* binding = ALLOC(Binding);
+
     char token[256];
     int result = parseIdentifier(context, token);
-    if ( result == FAIL ) return FAIL;
-    strcpy(b->lhs, token);
+    if ( result == FAIL ) return NULL;
+    strcpy(binding->lhs, token);
 
     result = parseLiteral(context, ":=");
-    if ( result == FAIL ) return FAIL;
+    CHECK_FAIL(result);
 
-    b->function_decl = ALLOC(FunctionDecl);
-    return parseFunctionDecl(context, b->function_decl);
+    binding->function_decl = parseFunctionDecl(context);
+    CHECK_NULL(binding->function_decl);
+
+    return binding;
 }
 
 //Module            = { ( StaticBinding ) }
-int parseModule(Context* context, Module* module)
+Module* parseModule(Context* context)
 {
+    Module* module = ALLOC(Module);
     struct ModuleElement* element = ALLOC(struct ModuleElement);
-    element->binding = ALLOC(Binding);
-
     module->first_element = module->last_element = element;
 
-    return parseBinding(context, element->binding);
+    element->binding = parseBinding(context);
+    CHECK_NULL(element->binding);
+
+    return module;
 }
 

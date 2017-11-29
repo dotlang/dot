@@ -100,14 +100,12 @@ int main(int argc, char** argv)
     int error_code = openInputFile(&context, argv[1]);
     if ( error_code == FAIL ) return 1;
 
-    Module module;
-    int result = parseModule(&context, &module);
+    Module* module = parseModule(&context);
     fclose(context.input_file);
-    debugLog(&context, "parse result is: %s", (result == FAIL)?"FAIL":"OK");
 
     prepareOutputLocation(&context);
 
-    compileModule(&context, &module);
+    compileModule(&context, module);
     disposeLlvm(&context);
 
     debugLog(&context, "llvm compilation finished.");

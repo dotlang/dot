@@ -115,3 +115,22 @@ int parseIdentifier(Context* context, char* token)
     return OK;
 }
 
+int strToOp(const char* str)
+{
+    if ( !strcmp(str, "+") ) return OP_ADD;
+    if ( !strcmp(str, "-") ) return OP_SUB;
+
+    return OP_NOP;
+}
+
+const char* opToStr(int op)
+{
+    switch ( op )
+    {
+        case OP_ADD: return "+";
+        case OP_SUB: return "-";
+    }
+
+    return "N/A";
+
+}
