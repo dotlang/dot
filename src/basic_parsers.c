@@ -27,7 +27,7 @@ void ignoreWhitespace(Context* context)
 }
 
 //Try to read any of given characters. Return index of matching choice
-int parseMultipleChoiceLiteral(Context* context, const int choice_count, const char** choices)
+const char* parseMultipleChoiceLiteral(Context* context, const int choice_count, const char** choices)
 {
     ignoreWhitespace(context);
 
@@ -35,10 +35,10 @@ int parseMultipleChoiceLiteral(Context* context, const int choice_count, const c
     {
         int result = parseLiteral(context, choices[i]);
 
-        if ( result == OK ) return i;
+        if ( result == OK ) return choices[i];
     }
 
-    return FAIL;
+    return NULL;
 }
 
 int parseLiteral(Context* context, const char* literal)
@@ -119,6 +119,10 @@ int strToOp(const char* str)
 {
     if ( !strcmp(str, "+") ) return OP_ADD;
     if ( !strcmp(str, "-") ) return OP_SUB;
+    if ( !strcmp(str, "*") ) return OP_MUL;
+    if ( !strcmp(str, "/") ) return OP_DIV;
+    if ( !strcmp(str, "%") ) return OP_REM;
+    if ( !strcmp(str, "%%") ) return OP_DVT;
 
     return OP_NOP;
 }
@@ -129,6 +133,10 @@ const char* opToStr(int op)
     {
         case OP_ADD: return "+";
         case OP_SUB: return "-";
+        case OP_MUL: return "*";
+        case OP_DIV: return "/";
+        case OP_REM: return "%";
+        case OP_DVT: return "%%";
     }
 
     return "N/A";

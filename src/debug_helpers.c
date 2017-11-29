@@ -49,6 +49,11 @@ void debugLogAddNewLine(Context* context)
 	printf("\n");
 }
 
+void dumpExpression(Context* context, Expression* expression)
+{
+
+}
+
 /* void debugExpression(Context* context, Expression* expression) */
 /* { */
 /*     if ( context->debug_mode == 0 ) return; */

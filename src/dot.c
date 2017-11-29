@@ -15,7 +15,7 @@ void printUsage()
 {
     printf("dotLang compiler v0.1.0 - Copyright Mahdi Mohammadinasab\n");
     printf("Usage: dot <input_file>\n");
-    printf("If DOT_VERBOSE_COMPILE is set to one, verbose output will be shown\n");
+    printf("If DOT_VERBOSE_LOG is set to one, verbose output will be shown\n");
 }
 
 void checkDebugMode(Context* context)
