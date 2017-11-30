@@ -95,7 +95,7 @@ int parseIdentifier(Context* context, char* token)
 
     if ( isalpha(c) )
     {
-        while ( c != EOF && !isspace(c) )
+        while ( c != EOF && isalnum(c) )
         {
             token[token_len++] = c;
             c = (char)fgetc(context->input_file);
