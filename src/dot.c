@@ -94,24 +94,24 @@ int main(int argc, char** argv)
         return 1;
     }
 
-	Context context;
-    checkDebugMode(&context);
+	ALLOC(context, Context);
+    checkDebugMode(context);
     
-    int error_code = openInputFile(&context, argv[1]);
+    int error_code = openInputFile(context, argv[1]);
     if ( error_code == FAIL ) return 1;
 
-    Module* module = parseModule(&context);
-    fclose(context.input_file);
+    Module* module = parseModule(context);
+    fclose(context->input_file);
 
-    prepareOutputLocation(&context);
+    prepareOutputLocation(context);
 
-    compileModule(&context, module);
-    disposeLlvm(&context);
+    compileModule(context, module);
+    disposeLlvm(context);
 
-    debugLog(&context, "llvm compilation finished.");
+    debugLog(context, "llvm compilation finished.");
 
-    generateExecutable(&context);
+    generateExecutable(context);
 
-    cleanupTemps(&context);
+    cleanupTemps(context);
 }
 

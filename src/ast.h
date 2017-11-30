@@ -60,6 +60,7 @@ typedef struct
 
 typedef struct Binding Binding;
 typedef struct FunctionDecl FunctionDecl;
+typedef struct CodeBlock CodeBlock;
 typedef struct Expression Expression;
 typedef struct EqExpression EqExpression;
 typedef struct CmpExpression CmpExpression;
@@ -88,8 +89,21 @@ typedef struct Binding
 
 typedef struct FunctionDecl
 {
+    CodeBlock* code_block;
     Expression* expression;
 } FunctionDecl;
+
+typedef struct CodeBlock
+{
+    struct CodeBlockElement
+    {
+        Binding* binding;
+        Expression* return_expression;
+
+        struct CodeBlockElement* next;
+    } *first_element, *last_element;
+
+} CodeBlock;
 
 typedef struct Expression
 {

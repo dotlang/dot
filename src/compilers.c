@@ -197,8 +197,16 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
 
 void compileFunctionDecl(Context* context, FunctionDecl* function_decl)
 {
-    LLVMValueRef return_exp = compileExpression(context, function_decl->expression);
-    LLVMBuildRet(context->builder, return_exp);
+    if ( function_decl->expression != NULL )
+    {
+        LLVMValueRef return_exp = compileExpression(context, function_decl->expression);
+        LLVMBuildRet(context->builder, return_exp);
+    }
+    else
+    {
+        LLVMValueRef return_exp = compileExpression(context, function_decl->code_block->first_element->return_expression);
+        LLVMBuildRet(context->builder, return_exp);
+    }
 }
 
 void compileBinding(Context* context, Binding* binding)

@@ -177,6 +177,28 @@ Expression* parseExpression(Context* context)
     return exp;
 }
 
+CodeBlock* parseCodeBlock(Context* context)
+{
+    ALLOC(code_block, CodeBlock);
+    ALLOC(element, struct CodeBlockElement);
+
+    int result = parseLiteral(context, "::");
+    if ( result == OK )
+    {
+        PARSE(element->return_expression, parseExpression);
+    }
+    else
+    {
+        //for now we only should have one return inside the code block
+        abort();
+        /* element->binding = parseBinding(context); */
+        /* if ( element->binding == NULL ) return code_block; */
+    }
+    code_block->first_element = code_block->last_element = element;
+
+    return code_block;
+}
+
 FunctionDecl* parseFunctionDecl(Context* context)
 {
     ALLOC(function_decl, FunctionDecl);
@@ -187,7 +209,21 @@ FunctionDecl* parseFunctionDecl(Context* context)
     result = parseLiteral(context, "->");
     CHECK_FAIL(result);
 
-    PARSE(function_decl->expression, parseExpression);
+    result = parseLiteral(context, "int");
+    if ( result == OK )
+    {
+        result = parseLiteral(context, "{");
+        if ( result == OK )
+        {
+            PARSE(function_decl->code_block, parseCodeBlock);
+            result = parseLiteral(context, "}");
+            if ( result == FAIL ) return NULL;
+        }
+    }
+    else
+    {
+        PARSE(function_decl->expression, parseExpression);
+    }
 
     return function_decl;
 }
