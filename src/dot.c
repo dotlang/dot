@@ -25,9 +25,12 @@ void checkDebugMode(Context* context)
     if ( s != NULL && strcmp(s, "1") == 0 ) 
     {
         context->debug_mode = 1;
+        debugLog(context, "Verbose log enabled");
     }
-
-    context->debug_mode = 0;
+    else
+    {
+        context->debug_mode = 0;
+    }
 }
 
 int openInputFile(Context* context, char* arg)

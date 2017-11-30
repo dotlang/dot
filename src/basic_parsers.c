@@ -10,6 +10,9 @@
 #include "basic_parsers.h"
 #include "debug_helpers.h"
 
+#define SAVE_POSITION long initial_position = ftell(context->input_file)
+#define RESTORE_POSITION fseek(context->input_file, initial_position, SEEK_SET)
+
 void ignoreWhitespace(Context* context)
 {
     char c = (char)fgetc(context->input_file);
@@ -92,7 +95,7 @@ int parseIdentifier(Context* context, char* token)
 
     if ( isalpha(c) )
     {
-        while ( c != EOF && isalpha(c) )
+        while ( c != EOF && !isspace(c) )
         {
             token[token_len++] = c;
             c = (char)fgetc(context->input_file);

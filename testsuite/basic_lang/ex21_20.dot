@@ -1,0 +1,7 @@
+# vi:syntax=python
+main := () -> int
+{
+    test1 := 12
+    test2 := 19
+    :: 1 + test2
+}

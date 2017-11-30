@@ -16,72 +16,7 @@
 #include "compilers.h"
 
 LLVMValueRef compileExpression(Context* context, Expression* expression);
-
-/* LLVMValueRef compileMathExpression(Context* context, */ 
-/*         MathExpression* exp, LLVMBuilderRef builder); */
-
-/* LLVMValueRef compileMathFactor(Context* context, MathFactor* factor, */ 
-/*                                LLVMBuilderRef builder) */
-/* { */
-/*     if ( factor->expression != NULL ) */ 
-/*     { */
-/*         return compileMathExpression(context, factor->expression->math_expression, builder); */
-/*     } */
-
-/*     LLVMTypeRef intType = LLVMIntType(32); */
-/*     return LLVMConstInt(intType, factor->number, true); */
-/* } */
-
-/* LLVMValueRef compileMathExpression(Context* context, MathExpression* exp, LLVMBuilderRef builder) */
-/* { */
-/*     LLVMValueRef val1 = compileMathFactor(context, exp->factor, builder); */
-
-/*     char op = exp->op; */
-
-/*     if ( op == OP_NOP ) */ 
-/*     { */
-/*         return val1; */
-/*     } */
-
-/*     LLVMValueRef val2 = compileMathExpression(context, exp->expression, builder); */
-
-/*     if ( op == OP_ADD ) */
-/*     { */
-/*         return LLVMBuildAdd(builder, val1, val2, "temp"); */
-/*     } */
-/*     else if ( op == OP_SUB ) */
-/*     { */
-/*         return LLVMBuildSub(builder, val1, val2, "temp"); */
-/*     } */
-/*     else if ( op == OP_MUL ) */
-/*     { */
-/*         return LLVMBuildMul(builder, val1, val2, "temp"); */
-/*     } */
-/*     else if ( op == OP_DIV ) */
-    /* { */
-    /* } */
-    /* else if ( op == OP_REM ) */
-    /* { */
-    /* } */
-    /* else if ( op == OP_DVT ) */
-    /* { */
-/*         return LLVMBuildMul(builder, val1, val2, "temp"); */
-    /*     return LLVMBuildSDiv(builder, val1, val2, "temp"); */
-    /*     return LLVMBuildSRem(builder, val1, val2, "temp"); */
-    /*     debugLog(context, "Compiling dvt expression"); */
-
-    /*     LLVMTypeRef intType = LLVMIntType(32); */
-    /*     LLVMValueRef one = LLVMConstInt(intType, 1, true); */
-    /*     LLVMValueRef zero = LLVMConstInt(intType, 0, true); */
-
-    /*     LLVMValueRef rem = LLVMBuildSRem(builder, val1, val2, "temp"); */
-    /*     LLVMValueRef is_divisible =  LLVMBuildICmp(builder, LLVMIntEQ, rem, zero, "is_divisible"); */
-    /*     return LLVMBuildSelect(builder, is_divisible, one, zero, "int_is_divisible"); */
-    /* } */
-
-    /* abort(); */
-/* } */
-
+void compileBinding(Context* context, Binding* binding);
 
 LLVMValueRef compileUnaryExpression(Context* context, UnaryExpression* unary_expression)
 {
@@ -90,9 +25,14 @@ LLVMValueRef compileUnaryExpression(Context* context, UnaryExpression* unary_exp
 
     BasicExpression* basic_expression = unary_expression->primary_expression->basic_expression;
 
-    if ( basic_expression->expression == NULL )
+    if ( basic_expression->expression == NULL && basic_expression->binding_name[0] == 0 )
     {
         return LLVMConstInt(intType, basic_expression->number, true);
+    }
+    else if ( basic_expression->binding_name[0] != 0 )
+    {
+        LLVMValueRef ptr = (LLVMValueRef)ht_get(context->bindings, basic_expression->binding_name);
+        return LLVMBuildLoad(context->builder, ptr, "");
     }
     else
     {
@@ -195,6 +135,26 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
     return compileEqExpression(context, expression->first_element->eq_expression);
 }
 
+void compileCodeBlock(Context* context, CodeBlock* code_block)
+{
+    struct CodeBlockElement* element = code_block->first_element;
+
+    while ( element != NULL )
+    {
+        if ( element->return_expression != NULL )
+        {
+            LLVMValueRef return_exp = compileExpression(context, code_block->last_element->return_expression);
+            LLVMBuildRet(context->builder, return_exp);
+        }
+        else
+        {
+            compileBinding(context, element->binding);
+        }
+
+        element = element->next;
+    }
+}
+
 void compileFunctionDecl(Context* context, FunctionDecl* function_decl)
 {
     if ( function_decl->expression != NULL )
@@ -204,25 +164,30 @@ void compileFunctionDecl(Context* context, FunctionDecl* function_decl)
     }
     else
     {
-        LLVMValueRef return_exp = compileExpression(context, function_decl->code_block->first_element->return_expression);
-        LLVMBuildRet(context->builder, return_exp);
+        compileCodeBlock(context, function_decl->code_block);
     }
 }
 
 void compileBinding(Context* context, Binding* binding)
 {
-    /* int num = binding->function_decl->expression->first_element->eq_expression-> */
-    /*             first_element->cmp_expression->first_element->shift_expression-> */
-    /*             first_element->add_expression->first_element->mul_expression-> */
-    /*             first_element->unary_expression->primary_expression-> */
-    /*             basic_expression->number; */
+    if ( binding->function_decl != NULL )
+    {
+        LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
+        LLVMValueRef mainfunc = LLVMAddFunction(context->module, binding->lhs, funcType);
+        LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry");
+        LLVMPositionBuilderAtEnd(context->builder, entry);
 
-    LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
-    LLVMValueRef mainfunc = LLVMAddFunction(context->module, binding->lhs, funcType);
-    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry");
-    LLVMPositionBuilderAtEnd(context->builder, entry);
+        compileFunctionDecl(context, binding->function_decl);
+    }
+    else
+    {
+        LLVMValueRef r_value = compileExpression(context, binding->expression);
+        LLVMTypeRef int_type = LLVMIntType(32);
+        LLVMValueRef alloc_ref = LLVMBuildAlloca(context->builder, int_type, binding->lhs);
+        LLVMBuildStore(context->builder, r_value, alloc_ref);
 
-    compileFunctionDecl(context, binding->function_decl);
+        ht_set(context->bindings, binding->lhs, alloc_ref);
+    }
 }
 
 void compileModule(Context* context, Module* m)

@@ -26,6 +26,14 @@ BasicExpression* parseBasicExpression(Context* context)
         PARSE(basic_expression->expression, parseExpression);
         IF_MATCH(")") return basic_expression;
     }
+    //it might be an identifier
+    char token[256];
+    int result = parseIdentifier(context, token);
+    if ( result == OK ) 
+    {
+        strcpy(basic_expression->binding_name, token);
+        return basic_expression;
+    }
 
     return NULL;
 }
@@ -213,6 +221,7 @@ FunctionDecl* parseFunctionDecl(Context* context)
     {
         IF_MATCH("{")
         {
+            
             PARSE(function_decl->code_block, parseCodeBlock);
         }
     }
@@ -236,7 +245,11 @@ Binding* parseBinding(Context* context)
     strcpy(binding->lhs, token);
 
     EXPECT(":=");
-    PARSE(binding->function_decl, parseFunctionDecl);
+
+    PARSE_ELSE(binding->function_decl, parseFunctionDecl)
+    {
+        PARSE(binding->expression , parseExpression);
+    }
 
     return binding;
 }

@@ -13,9 +13,7 @@
 
 #define ALLOC(V, T)  T* V = (T*)calloc(1, sizeof(T))
 #define PARSE(R, F) R = F(context); if ( R == NULL ) return NULL
-
-#define SAVE_POSITION long initial_position = ftell(context->input_file)
-#define RESTORE_POSITION fseek(context->input_file, initial_position, SEEK_SET)
+#define PARSE_ELSE(R, F) R = F(context); if ( R == NULL )
 
 #define EXPECT(x)     if ( matchLiteral(context, x) == false ) return NULL
 #define IF_MATCH(x)   if ( matchLiteral(context, x) == true )
@@ -89,6 +87,7 @@ typedef struct Binding
 {
     char lhs[32];
     FunctionDecl* function_decl;
+    Expression* expression;
 } Binding;
 
 typedef struct FunctionDecl
