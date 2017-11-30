@@ -3,8 +3,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "llvm-c/Core.h"
+#include "hash.h"
 
 #define OK   1
 #define FAIL -1
@@ -14,8 +16,9 @@
 
 #define SAVE_POSITION long initial_position = ftell(context->input_file)
 #define RESTORE_POSITION fseek(context->input_file, initial_position, SEEK_SET)
-#define CHECK_FAIL(x) if ( x == FAIL ) return NULL
-#define CHECK_NULL(x) if ( x == NULL ) return NULL
+
+#define EXPECT(x)     if ( matchLiteral(context, x) == false ) return NULL
+#define IF_MATCH(x)   if ( matchLiteral(context, x) == true )
 
 #define OP_NOP 0
 #define OP_AND 1
@@ -54,6 +57,7 @@ typedef struct
 
     LLVMModuleRef module;
     LLVMBuilderRef builder;
+    hashtable_t* bindings;
 
 } Context;
 

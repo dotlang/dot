@@ -1,6 +1,5 @@
 #include <string.h>
 
-
 #include "parsers.h"
 #include "ast.h"
 #include "basic_parsers.h"
@@ -8,6 +7,7 @@
 
 
 Expression* parseExpression(Context* context);
+Binding* parseBinding(Context* context);
 
 
 BasicExpression* parseBasicExpression(Context* context)
@@ -15,18 +15,16 @@ BasicExpression* parseBasicExpression(Context* context)
     ALLOC(basic_expression, BasicExpression);
 
     char num[16];
-    int result = parseNumber(context, num);
-    if ( result != FAIL )
+    if ( matchNumber(context, num) )
     {
         basic_expression->number = atoi(num);
         return basic_expression;
     }
 
-    if ( parseLiteral(context, "(") == OK )
+    IF_MATCH("(")
     {
         PARSE(basic_expression->expression, parseExpression);
-        if ( parseLiteral(context, ")") == FAIL ) return NULL;
-        return basic_expression;
+        IF_MATCH(")") return basic_expression;
     }
 
     return NULL;
@@ -37,22 +35,14 @@ PrimaryExpression* parsePrimaryExpression(Context* context)
     ALLOC(primary_expression, PrimaryExpression);
     PARSE(primary_expression->basic_expression, parseBasicExpression);
 
-    ALLOC(element, struct PrimaryExpressionElement);
-    element->op = OP_NOP;
-    //TODO: scan for ( or dot or [
-    //
-    
     return primary_expression;
 }
 
 UnaryExpression* parseUnaryExpression(Context* context)
 {
     ALLOC(unary_expression, UnaryExpression);
-
-    unary_expression->op = OP_NOP;
-
     PARSE(unary_expression->primary_expression, parsePrimaryExpression);
-    //TODO: scan for operators
+
     return unary_expression;
 }
 
@@ -67,7 +57,7 @@ MulExpression* parseMulExpression(Context* context)
     element->op = OP_NOP;
 
     const char* ops[] = { "*", "/", "%%", "%" };
-    const char* op = parseMultipleChoiceLiteral(context, 4, ops);
+    const char* op = matchLiterals(context, ops, 4);
 
     while ( op != NULL )
     {
@@ -79,7 +69,7 @@ MulExpression* parseMulExpression(Context* context)
 
         PARSE(element->unary_expression, parseUnaryExpression);
 
-        op = parseMultipleChoiceLiteral(context, 4, ops);
+        op = matchLiterals(context, ops, 4);
     }
 
     mul_expression->last_element = element;
@@ -100,7 +90,7 @@ AddExpression* parseAddExpression(Context* context)
     element->op = OP_NOP;
 
     const char* ops[] = { "+", "-" };
-    const char* op = parseMultipleChoiceLiteral(context, 2, ops);
+    const char* op = matchLiterals(context, ops, 2);
 
     //it's fine if we no longer see operators
     while ( op != NULL ) 
@@ -113,11 +103,10 @@ AddExpression* parseAddExpression(Context* context)
 
         PARSE(element->mul_expression, parseMulExpression);
 
-        op = parseMultipleChoiceLiteral(context, 2, ops);
+        op = matchLiterals(context, ops, 2);
     }
     add_expression->last_element = element;
 
-    //TODO: scan for operators
     return add_expression;
 }
 
@@ -180,44 +169,51 @@ Expression* parseExpression(Context* context)
 CodeBlock* parseCodeBlock(Context* context)
 {
     ALLOC(code_block, CodeBlock);
-    ALLOC(element, struct CodeBlockElement);
+    struct CodeBlockElement* element = NULL;
 
-    int result = parseLiteral(context, "::");
-    if ( result == OK )
+    while ( 1 )
     {
-        PARSE(element->return_expression, parseExpression);
-    }
-    else
-    {
-        //for now we only should have one return inside the code block
-        abort();
-        /* element->binding = parseBinding(context); */
-        /* if ( element->binding == NULL ) return code_block; */
-    }
-    code_block->first_element = code_block->last_element = element;
+        IF_MATCH("}")
+        {
+            code_block->last_element = element;
+            return code_block;
+        }
 
-    return code_block;
+        ALLOC(temp_element, struct CodeBlockElement);
+        if ( code_block->first_element == NULL )
+        {
+            code_block->first_element = temp_element;
+            element = temp_element;
+        }
+        else
+        {
+            element->next = temp_element;
+            element = element->next;
+        }
+
+        IF_MATCH("::")
+        {
+            PARSE(element->return_expression, parseExpression);
+        }
+        else
+        {
+            PARSE(element->binding, parseBinding);
+        }
+    }
 }
 
 FunctionDecl* parseFunctionDecl(Context* context)
 {
     ALLOC(function_decl, FunctionDecl);
 
-    int result = parseLiteral(context, "()");
-    CHECK_FAIL(result);
+    EXPECT("()");
+    EXPECT("->");
 
-    result = parseLiteral(context, "->");
-    CHECK_FAIL(result);
-
-    result = parseLiteral(context, "int");
-    if ( result == OK )
+    IF_MATCH("int")
     {
-        result = parseLiteral(context, "{");
-        if ( result == OK )
+        IF_MATCH("{")
         {
             PARSE(function_decl->code_block, parseCodeBlock);
-            result = parseLiteral(context, "}");
-            if ( result == FAIL ) return NULL;
         }
     }
     else
@@ -239,9 +235,7 @@ Binding* parseBinding(Context* context)
     if ( result == FAIL ) return NULL;
     strcpy(binding->lhs, token);
 
-    result = parseLiteral(context, ":=");
-    CHECK_FAIL(result);
-
+    EXPECT(":=");
     PARSE(binding->function_decl, parseFunctionDecl);
 
     return binding;

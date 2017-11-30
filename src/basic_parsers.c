@@ -27,21 +27,17 @@ void ignoreWhitespace(Context* context)
 }
 
 //Try to read any of given characters. Return index of matching choice
-const char* parseMultipleChoiceLiteral(Context* context, const int choice_count, const char** choices)
+const char* matchLiterals(Context* context, const char** choices, const int choice_count)
 {
-    ignoreWhitespace(context);
-
     for(int i=0;i<choice_count;i++)
     {
-        int result = parseLiteral(context, choices[i]);
-
-        if ( result == OK ) return choices[i];
+        if ( matchLiteral(context, choices[i]) ) return choices[i];
     }
 
     return NULL;
 }
 
-int parseLiteral(Context* context, const char* literal)
+bool matchLiteral(Context* context, const char* literal)
 {
     ignoreWhitespace(context);
 
@@ -52,14 +48,14 @@ int parseLiteral(Context* context, const char* literal)
         if ( c != literal[i] ) 
         {
             RESTORE_POSITION;
-            return FAIL;
+            return false;
         }
     }
 
-    return OK;
+    return true;
 }
 
-int parseNumber(Context* context, char* token)
+bool matchNumber(Context* context, char* token)
 {
     ignoreWhitespace(context);
     SAVE_POSITION;
@@ -79,11 +75,11 @@ int parseNumber(Context* context, char* token)
     else
     {
         RESTORE_POSITION;
-        return FAIL;
+        return false;
     }
 
     token[token_len] = 0;
-    return OK;
+    return true;
 }
 
 int parseIdentifier(Context* context, char* token)

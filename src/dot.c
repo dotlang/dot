@@ -95,6 +95,8 @@ int main(int argc, char** argv)
     }
 
 	ALLOC(context, Context);
+	context->bindings = ht_create(100);
+
     checkDebugMode(context);
     
     int error_code = openInputFile(context, argv[1]);
