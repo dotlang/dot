@@ -41,6 +41,7 @@
 #define OP_NEG 20
 #define OP_DOT 21
 #define OP_BRC 22  //braces a[1]
+#define OP_CAL 23  //function call
 
 typedef struct
 {
@@ -55,7 +56,8 @@ typedef struct
 
     LLVMModuleRef module;
     LLVMBuilderRef builder;
-    hashtable_t* bindings;
+    hashtable_t* module_bindings;
+    hashtable_t* function_bindings;
 
 } Context;
 
@@ -179,7 +181,6 @@ typedef struct PrimaryExpression
     BasicExpression* basic_expression;
     struct PrimaryExpressionElement
     {
-        int op;
         TermExpression* term_expression;
         struct PrimaryExpressionElement* next;
     } *first_element, *last_element;
@@ -195,6 +196,7 @@ typedef struct BasicExpression
 
 typedef struct TermExpression
 {
+    int op;
     Expression* expression;
     char binding_name[32];
 } TermExpression;

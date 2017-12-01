@@ -11,10 +11,12 @@ cd "$(dirname "$0")"
 rm -rf build
 mkdir build
 # -g to generate debug info
-clang++ -std=c11  `llvm-config --cflags` -g -x c -I src src/*.c `llvm-config --ldflags --libs core analysis native bitwriter --system-libs` -lm -o ./build/dot
-if [ $? -ne "0" ]; then
+clang++ -Werror -std=c11  `llvm-config --cflags` -g -x c -I src src/*.c `llvm-config --ldflags --libs core analysis native bitwriter --system-libs` -lm -o ./build/dot
+compile_result=$?
+if [ $compile_result -ne "0" ]; then
     exit
 fi
+
 
 success_count=0
 fail_count=0

@@ -38,10 +38,49 @@ BasicExpression* parseBasicExpression(Context* context)
     return NULL;
 }
 
+TermExpression* parseTermExpression(Context* context)
+{
+    IF_MATCH("(")
+    {
+        IF_MATCH(")")
+        {
+            ALLOC(term_expression, TermExpression);
+            term_expression->op = OP_CAL;
+            return term_expression;
+        }
+    }
+
+    return NULL;
+}
+
 PrimaryExpression* parsePrimaryExpression(Context* context)
 {
     ALLOC(primary_expression, PrimaryExpression);
     PARSE(primary_expression->basic_expression, parseBasicExpression);
+
+    struct PrimaryExpressionElement* element;
+
+    while ( 1 )
+    {
+        ALLOC(element_next, struct PrimaryExpressionElement);
+
+        PARSE_ELSE(element_next->term_expression, parseTermExpression)
+        {
+            primary_expression->last_element = element;
+            return primary_expression;
+        }
+
+        if ( primary_expression->first_element == NULL )
+        {
+            primary_expression->first_element  = element_next;
+            element = element_next;
+        }
+        else
+        {
+            element->next = element_next;
+            element = element->next;
+        }
+    }
 
     return primary_expression;
 }
@@ -246,8 +285,11 @@ Binding* parseBinding(Context* context)
 
     EXPECT(":=");
 
+    debugLog(context, "Parsing binding: %s", token);
+
     PARSE_ELSE(binding->function_decl, parseFunctionDecl)
     {
+        debugLog(context, "%s is an expression", token);
         PARSE(binding->expression , parseExpression);
     }
 
@@ -258,11 +300,28 @@ Binding* parseBinding(Context* context)
 Module* parseModule(Context* context)
 {
     ALLOC(module, Module);
-    ALLOC(element, struct ModuleElement);
-    module->first_element = module->last_element = element;
+    struct ModuleElement* element = NULL;
 
-    PARSE(element->binding, parseBinding);
+    while ( 1 ) 
+    {
+        ALLOC(temp_element, struct ModuleElement);
 
-    return module;
+        PARSE_ELSE(temp_element->binding, parseBinding)
+        {
+            module->last_element = element;
+            return module;
+        }
+
+        if ( module->first_element == NULL )
+        {
+            module->first_element = temp_element;
+            element = temp_element;
+        }
+        else
+        {
+            element->next = temp_element;
+            element = element->next;
+        }
+    }
 }
 

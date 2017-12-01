@@ -16,14 +16,15 @@
 #include "compilers.h"
 
 LLVMValueRef compileExpression(Context* context, Expression* expression);
-void compileBinding(Context* context, Binding* binding);
+void compileBinding(Context* context, hashtable_t*, Binding* binding);
 
-LLVMValueRef compileUnaryExpression(Context* context, UnaryExpression* unary_expression)
+
+LLVMValueRef compileBasicExpression(Context* context, BasicExpression* basic_expression)
 {
     LLVMTypeRef intType = LLVMIntType(32);
     /* printf("basic is %d", unary_expression->primary_expression->basic_expression->number); */
 
-    BasicExpression* basic_expression = unary_expression->primary_expression->basic_expression;
+    /* BasicExpression* basic_expression = unary_expression->primary_expression->basic_expression; */
 
     if ( basic_expression->expression == NULL && basic_expression->binding_name[0] == 0 )
     {
@@ -31,13 +32,40 @@ LLVMValueRef compileUnaryExpression(Context* context, UnaryExpression* unary_exp
     }
     else if ( basic_expression->binding_name[0] != 0 )
     {
-        LLVMValueRef ptr = (LLVMValueRef)ht_get(context->bindings, basic_expression->binding_name);
-        return LLVMBuildLoad(context->builder, ptr, "");
+        LLVMValueRef ptr = (LLVMValueRef)ht_get(context->function_bindings, basic_expression->binding_name);
+        //if this is a function level binding, load it's value from stack
+        if ( ptr != NULL ) return LLVMBuildLoad(context->builder, ptr, "");
+
+        //if this is module level, return it's value-ref without loading
+        return (LLVMValueRef) ht_get(context->module_bindings, basic_expression->binding_name);
     }
     else
     {
         return compileExpression(context, basic_expression->expression);
     }
+}
+
+LLVMValueRef compilePrimaryExpression(Context* context, PrimaryExpression* primary_expression)
+{
+    LLVMValueRef result = compileBasicExpression(context, primary_expression->basic_expression);
+
+    struct PrimaryExpressionElement* element = primary_expression->first_element;
+
+    if ( element == NULL ) return result;
+    
+    if ( element->term_expression->op == OP_CAL )
+    {
+        LLVMValueRef args[] = {result};
+        //so the result here is a function we have to invoke
+        return LLVMBuildCall(context->builder, result, args, 0, ""); 
+    }
+
+    abort();
+}
+
+LLVMValueRef compileUnaryExpression(Context* context, UnaryExpression* unary_expression)
+{
+    return compilePrimaryExpression(context, unary_expression->primary_expression);
 }
 
 LLVMValueRef compileMulExpression(Context* context, MulExpression* mul_expression)
@@ -148,7 +176,7 @@ void compileCodeBlock(Context* context, CodeBlock* code_block)
         }
         else
         {
-            compileBinding(context, element->binding);
+            compileBinding(context, context->function_bindings, element->binding);
         }
 
         element = element->next;
@@ -168,16 +196,18 @@ void compileFunctionDecl(Context* context, FunctionDecl* function_decl)
     }
 }
 
-void compileBinding(Context* context, Binding* binding)
+void compileBinding(Context* context, hashtable_t* storage, Binding* binding)
 {
     if ( binding->function_decl != NULL )
     {
-        LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
-        LLVMValueRef mainfunc = LLVMAddFunction(context->module, binding->lhs, funcType);
+        LLVMValueRef mainfunc = (LLVMValueRef)ht_get(storage, binding->lhs);
+        /* LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0); */
+        /* LLVMValueRef mainfunc = LLVMAddFunction(context->module, binding->lhs, funcType); */
         LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry");
         LLVMPositionBuilderAtEnd(context->builder, entry);
 
         compileFunctionDecl(context, binding->function_decl);
+        ht_set(storage, binding->lhs, mainfunc);
     }
     else
     {
@@ -186,7 +216,21 @@ void compileBinding(Context* context, Binding* binding)
         LLVMValueRef alloc_ref = LLVMBuildAlloca(context->builder, int_type, binding->lhs);
         LLVMBuildStore(context->builder, r_value, alloc_ref);
 
-        ht_set(context->bindings, binding->lhs, alloc_ref);
+        ht_set(storage, binding->lhs, alloc_ref);
+    }
+}
+
+void declareBinding(Context* context, hashtable_t* storage, Binding* binding)
+{
+    if ( binding->function_decl != NULL )
+    {
+        LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
+        LLVMValueRef mainfunc = LLVMAddFunction(context->module, binding->lhs, funcType);
+        /* LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry"); */
+        /* LLVMPositionBuilderAtEnd(context->builder, entry); */
+
+        /* compileFunctionDecl(context, binding->function_decl); */
+        ht_set(storage, binding->lhs, mainfunc);
     }
 }
 
@@ -197,11 +241,28 @@ void compileModule(Context* context, Module* m)
     LLVMSetTarget(context->module, LLVMGetDefaultTargetTriple());
     context->builder = LLVMCreateBuilder();
 
-    compileBinding(context, m->first_element->binding);
-    /* compileFunction(context, m->items_head->static_binding->function_decl); */
+    struct ModuleElement* element = m->first_element;
+    while ( element != NULL )
+    {
+        declareBinding(context, context->module_bindings, element->binding);
+        element = element->next;
+    }
+
+    element = m->first_element;
+    while ( element != NULL )
+    {
+        compileBinding(context, context->module_bindings, element->binding);
+        element = element->next;
+    }
 
     char *error = NULL;
-    LLVMVerifyModule(context->module, LLVMAbortProcessAction, &error);
+    bool is_invalid = LLVMVerifyModule(context->module, LLVMAbortProcessAction, &error);
+    if ( is_invalid )
+    {
+        printf("%s\n", error);
+        return;
+    }
+
     LLVMPrintModuleToFile(context->module, context->llvmir_file_path, &error);
     LLVMDisposeMessage(error);
 }
