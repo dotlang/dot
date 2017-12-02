@@ -272,8 +272,6 @@ FunctionDecl* parseFunctionDecl(Context* context)
     return function_decl;
 }
 
-//StaticBinding  = BindingLhs+ ":=" ( FunctionDecl )
-//FunctionDecl   = "(" ") ->" Expression
 Binding* parseBinding(Context* context)
 {
     ALLOC(binding, Binding);
@@ -296,7 +294,6 @@ Binding* parseBinding(Context* context)
     return binding;
 }
 
-//Module            = { ( StaticBinding ) }
 Module* parseModule(Context* context)
 {
     ALLOC(module, Module);
