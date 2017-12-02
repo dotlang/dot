@@ -9,25 +9,28 @@
 #include "ast.h"
 #include "debug_helpers.h"
 #include "parsers.h"
-#include "basic_compilers.h"
+#include "compilers.h"
 
 void printUsage()
 {
     printf("dotLang compiler v0.1.0 - Copyright Mahdi Mohammadinasab\n");
     printf("Usage: dot <input_file>\n");
-    printf("If DOT_VERBOSE_COMPILE is set to one, verbose output will be shown\n");
+    printf("If DOT_VERBOSE_LOG is set to one, verbose output will be shown\n");
 }
 
-int checkDebugMode()
+void checkDebugMode(Context* context)
 {
-    const char* s = getenv("DOT_VERBOSE_COMPILE");
+    const char* s = getenv("DOT_VERBOSE_LOG");
 
     if ( s != NULL && strcmp(s, "1") == 0 ) 
     {
-        return 1;
+        context->debug_mode = 1;
+        debugLog(context, "Verbose log enabled");
     }
-
-    return 0;
+    else
+    {
+        context->debug_mode = 0;
+    }
 }
 
 int openInputFile(Context* context, char* arg)
@@ -82,7 +85,7 @@ void cleanupTemps(Context* context)
     debugLog(context, "cleaning up temp files...");
     char cleanup_cmd[1024];
     sprintf(cleanup_cmd, "rm -rf %s", context->llvmir_dir);
-    system(cleanup_cmd);
+    /* system(cleanup_cmd); */
     debugLog(context, "cleanup finished.");
 }
 
@@ -94,26 +97,26 @@ int main(int argc, char** argv)
         return 1;
     }
 
-	Context context;
-    context.debug_mode = checkDebugMode();
+	ALLOC(context, Context);
+	context->function_bindings = ht_create(100);
+
+    checkDebugMode(context);
     
-    int error_code = openInputFile(&context, argv[1]);
+    int error_code = openInputFile(context, argv[1]);
     if ( error_code == FAIL ) return 1;
 
-    Module module;
-    int result = parseModule(&context, &module);
-    fclose(context.input_file);
-    debugLog(&context, "parse result is: %s", (result == FAIL)?"FAIL":"OK");
+    Module* module = parseModule(context);
+    fclose(context->input_file);
 
-    prepareOutputLocation(&context);
+    prepareOutputLocation(context);
 
-    compileModule(&context, &module);
-    disposeLlvm(&context);
+    compileModule(context, module);
+    disposeLlvm(context);
 
-    debugLog(&context, "llvm compilation finished.");
+    debugLog(context, "llvm compilation finished.");
 
-    generateExecutable(&context);
+    generateExecutable(context);
 
-    cleanupTemps(&context);
+    cleanupTemps(context);
 }
 

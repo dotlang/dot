@@ -10,6 +10,9 @@
 #include "basic_parsers.h"
 #include "debug_helpers.h"
 
+#define SAVE_POSITION long initial_position = ftell(context->input_file)
+#define RESTORE_POSITION fseek(context->input_file, initial_position, SEEK_SET)
+
 void ignoreWhitespace(Context* context)
 {
     char c = (char)fgetc(context->input_file);
@@ -26,25 +29,18 @@ void ignoreWhitespace(Context* context)
     ungetc(c, context->input_file);
 }
 
-//Try to read any of given characters. Return index of matching character
-int parseMultipleChoiceLiteral(Context* context, const char* choices)
+//Try to read any of given characters. Return index of matching choice
+const char* matchLiterals(Context* context, const char** choices, const int choice_count)
 {
-    ignoreWhitespace(context);
-
-    SAVE_POSITION;
-    char c = (char)fgetc(context->input_file);
-    int choice_count = strlen(choices);
-
     for(int i=0;i<choice_count;i++)
     {
-        if ( c == choices[i] ) return i;
+        if ( matchLiteral(context, choices[i]) ) return choices[i];
     }
 
-    RESTORE_POSITION;
-    return FAIL;
+    return NULL;
 }
 
-int parseLiteral(Context* context, const char* literal)
+bool matchLiteral(Context* context, const char* literal)
 {
     ignoreWhitespace(context);
 
@@ -55,14 +51,14 @@ int parseLiteral(Context* context, const char* literal)
         if ( c != literal[i] ) 
         {
             RESTORE_POSITION;
-            return FAIL;
+            return false;
         }
     }
 
-    return OK;
+    return true;
 }
 
-int parseNumber(Context* context, char* token)
+bool matchNumber(Context* context, char* token)
 {
     ignoreWhitespace(context);
     SAVE_POSITION;
@@ -82,11 +78,11 @@ int parseNumber(Context* context, char* token)
     else
     {
         RESTORE_POSITION;
-        return FAIL;
+        return false;
     }
 
     token[token_len] = 0;
-    return OK;
+    return true;
 }
 
 int parseIdentifier(Context* context, char* token)
@@ -99,7 +95,7 @@ int parseIdentifier(Context* context, char* token)
 
     if ( isalpha(c) )
     {
-        while ( c != EOF && isalpha(c) )
+        while ( c != EOF && isalnum(c) )
         {
             token[token_len++] = c;
             c = (char)fgetc(context->input_file);
@@ -118,3 +114,30 @@ int parseIdentifier(Context* context, char* token)
     return OK;
 }
 
+int strToOp(const char* str)
+{
+    if ( !strcmp(str, "+") ) return OP_ADD;
+    if ( !strcmp(str, "-") ) return OP_SUB;
+    if ( !strcmp(str, "*") ) return OP_MUL;
+    if ( !strcmp(str, "/") ) return OP_DIV;
+    if ( !strcmp(str, "%") ) return OP_REM;
+    if ( !strcmp(str, "%%") ) return OP_DVT;
+
+    return OP_NOP;
+}
+
+const char* opToStr(int op)
+{
+    switch ( op )
+    {
+        case OP_ADD: return "+";
+        case OP_SUB: return "-";
+        case OP_MUL: return "*";
+        case OP_DIV: return "/";
+        case OP_REM: return "%";
+        case OP_DVT: return "%%";
+    }
+
+    return "N/A";
+
+}

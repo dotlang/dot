@@ -1,0 +1,13 @@
+# vi:syntax=python
+
+main := () -> int
+{
+    :: otherMain()+2
+}
+
+otherMain := () -> int
+{
+    :: 10
+}
+
+

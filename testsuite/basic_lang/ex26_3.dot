@@ -1,0 +1,26 @@
+# vi:syntax=python
+
+main := () -> int
+{
+    :: betha()/11
+}
+
+betha := () -> int
+{
+#this will return 33
+    ddd := 3
+    :: (2+gamma()+20)+alpha()+ddd-3
+}
+
+alpha := () -> int
+{
+#this will return 1
+    :: 11-gamma()
+}
+
+
+gamma := () -> int
+{
+#this will return 10
+    :: 1+2+3+(1*4)
+}

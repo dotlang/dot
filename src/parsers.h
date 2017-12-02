@@ -3,6 +3,6 @@
 
 #include "ast.h"
 
-int parseModule(Context* context, Module* module);
+Module* parseModule(Context* context);
 
 #endif
