@@ -1,20 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
-#include <libgen.h>
-#include <assert.h>
-#include <stdbool.h>
-
-#include "llvm-c/Core.h"
-#include "llvm-c/Analysis.h"
-#include "llvm-c/TargetMachine.h"
-
-#include "ast.h"
-#include "debug_helpers.h"
-#include "parsers.h"
 #include "compilers.h"
-#include "expression_compiler.h"
 
 void compileBinding(Context* context, hashtable_t*, Binding* binding);
 
@@ -55,14 +39,11 @@ void compileBinding(Context* context, hashtable_t* storage, Binding* binding)
 {
     if ( binding->function_decl != NULL )
     {
-        LLVMValueRef mainfunc = (LLVMValueRef)ht_get(storage, binding->lhs);
-        /* LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0); */
-        /* LLVMValueRef mainfunc = LLVMAddFunction(context->module, binding->lhs, funcType); */
+        LLVMValueRef mainfunc = LLVMGetNamedFunction(context->module, binding->lhs);
         LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry");
         LLVMPositionBuilderAtEnd(context->builder, entry);
 
         compileFunctionDecl(context, binding->function_decl);
-        ht_set(storage, binding->lhs, mainfunc);
     }
     else
     {
@@ -75,18 +56,10 @@ void compileBinding(Context* context, hashtable_t* storage, Binding* binding)
     }
 }
 
-void declareBinding(Context* context, hashtable_t* storage, Binding* binding)
+void declareFunctionBinding(Context* context, Binding* binding)
 {
-    if ( binding->function_decl != NULL )
-    {
-        LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
-        LLVMValueRef mainfunc = LLVMAddFunction(context->module, binding->lhs, funcType);
-        /* LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry"); */
-        /* LLVMPositionBuilderAtEnd(context->builder, entry); */
-
-        /* compileFunctionDecl(context, binding->function_decl); */
-        ht_set(storage, binding->lhs, mainfunc);
-    }
+    LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
+    LLVMAddFunction(context->module, binding->lhs, funcType);
 }
 
 void compileModule(Context* context, Module* m)
@@ -97,16 +70,17 @@ void compileModule(Context* context, Module* m)
     context->builder = LLVMCreateBuilder();
 
     struct ModuleElement* element = m->first_element;
-    while ( element != NULL )
+    while ( element != NULL && element->binding->function_decl != NULL )
     {
-        declareBinding(context, context->module_bindings, element->binding);
+        declareFunctionBinding(context, element->binding);
         element = element->next;
     }
 
     element = m->first_element;
     while ( element != NULL )
     {
-        compileBinding(context, context->module_bindings, element->binding);
+        //for module level bindings we dont need a storage as we can lookup functions using LLVM
+        compileBinding(context, NULL, element->binding);
         element = element->next;
     }
 

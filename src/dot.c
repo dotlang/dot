@@ -98,7 +98,6 @@ int main(int argc, char** argv)
     }
 
 	ALLOC(context, Context);
-	context->module_bindings = ht_create(100);
 	context->function_bindings = ht_create(100);
 
     checkDebugMode(context);
