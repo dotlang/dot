@@ -56,7 +56,7 @@ typedef struct
 
     LLVMModuleRef module;
     LLVMBuilderRef builder;
-    hashtable_t* module_bindings;
+    /* hashtable_t* module_bindings; */
     hashtable_t* function_bindings;
 
 } Context;

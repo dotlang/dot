@@ -5,10 +5,8 @@
 #include "basic_parsers.h"
 #include "debug_helpers.h"
 
-
-Expression* parseExpression(Context* context);
-Binding* parseBinding(Context* context);
-
+Expression* parseExpression(Context*);
+Binding* parseBinding(Context*);
 
 BasicExpression* parseBasicExpression(Context* context)
 {

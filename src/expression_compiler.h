@@ -1,5 +1,5 @@
-#ifndef __COMPILERS_H__
-#define __COMPILERS_H__
+#ifndef __EXP_COMPILER__
+#define __EXP_COMPILER__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,16 +9,13 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#include "debug_helpers.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/TargetMachine.h"
-
-#include "ast.h"
-#include "debug_helpers.h"
 #include "parsers.h"
-#include "expression_compiler.h"
+#include "ast.h"
 
-void compileModule(Context*, Module*);
-void disposeLlvm(Context*);
+LLVMValueRef compileExpression(Context* context, Expression* expression);
 
 #endif
