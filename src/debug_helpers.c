@@ -51,7 +51,15 @@ void debugLogAddNewLine(Context* context)
 
 void dumpExpression(Context* context, Expression* expression)
 {
+    if ( context->debug_mode != 1 ) return;
 
+    ExpressionNode* node = expression->first_node;
+    while ( node != NULL ) 
+    {
+        debugLogNoNewLine(context, "%s ", node->token);
+        node = node->next;
+    }
+    debugLog(context, "\n");
 }
 
 /* void debugExpression(Context* context, Expression* expression) */

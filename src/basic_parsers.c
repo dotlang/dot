@@ -110,7 +110,6 @@ int parseIdentifier(Context* context, char* token)
     }
 
     token[token_len] = 0;
-    debugLog(context, "Parsed an identifier: %s", token);
         
     return OK;
 }
@@ -148,40 +147,109 @@ bool is_delimiter(char c)
     return strchr("\r\n+-=.,[]()", c) != NULL;
 }
 
-void getNextToken(Context* context, char* token)
+char getChar(Context* context)
 {
-    ignoreWhitespace(context);
-    int token_len = 0;
-    token[0]=0;
+    char c= (char)fgetc(context->input_file);
 
-    char c = (char)fgetc(context->input_file);
+    return c;
+}
 
-    if ( c == EOF ) return;
-    if ( strchr("+-*/[]().,", c) != NULL )
+void undoChar(Context* context, char c)
+{
+    ungetc(c, context->input_file);
+}
+
+int getNextToken(Context* context, char* token)
+{
+    while ( 1 ) 
     {
-        token[0]=c;
-        token[1]=0;
-        return;
-    }
+        char c = getChar(context);
 
-    if ( c == '%' )
-    {
-        c = (char)fgetc(context->input_file);
+        //check for whitespace and EOF
+        if ( c == EOF ) return 0;
+        if ( isspace(c) ) continue;
+
+        //ignore comments
+        if ( c == '#' ) 
+        {
+            char temp[1024];
+            fgets(temp, 1024, context->input_file);
+            continue;
+        }
+
+        //check for one-two character tokens
         if ( c == '%' )
         {
-            token[0] = token[1] = '%';
-            token[2] = 0;
-            return;
+            c = getChar(context);
+            if ( c == '%' )
+            {
+                token[0] = token[1] = '%';
+                return 2;
+            }
+            undoChar(context, c);
+            token[0] = '%';
+            return 1;
         }
-        ungetc(c, context->input_file);
+
+        if ( c == ':' )
+        {
+            c = getChar(context);
+            if ( c == '=' )
+            {
+                token[0] = ':';
+                token[1] = '=';
+                return 2;
+            }
+            undoChar(context, c);
+            token[0] = ':';
+            return 1;
+        }
+
+        if ( c == '-' )
+        {
+            c = getChar(context);
+            if ( c == '>' )
+            {
+                token[0] = '-';
+                token[1] = '>';
+                return 2;
+            }
+            undoChar(context, c);
+            token[0] = '-';
+            return 1;
+        }
+        
+        //check for single character tokens
+        if ( strchr("+-*/[]().,", c) != NULL )
+        {
+            token[0] = c;
+            return 1;
+        }
+
+        //check for number literals
+        if ( isdigit(c) )
+        {
+            int len = 0;
+            while ( isdigit(c) )
+            {
+                token[len++] = c;
+                c = getChar(context);
+            }
+            undoChar(context, c);
+            return len;
+        }
+
+        if ( isalpha(c) )
+        {
+            int len = 0;
+            while ( c != EOF && isalnum(c) )
+            {
+                token[len++] = c;
+                c = getChar(context);
+            }
+            undoChar(context, c);
+
+            return len;
+        }
     }
-
-    while ( isdigit(c) )
-    {
-        token[token_len++] = c;
-        c = (char)fgetc(context->input_file);
-    };
-    ungetc(c, context->input_file);
-
-    token[token_len] = 0;
 }

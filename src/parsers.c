@@ -247,13 +247,11 @@ Expression* parseExpression(Context* context)
 
     while ( 1 )
     {
-        printf("reading next token\n");
-        getNextToken(context, token);
-        if ( token[0] == 0 ) break;
-        printf("processing next token: <%s>\n", token);
+        int token_len = getNextToken(context, token);
+        if ( token_len == 0 ) break;
+        token[token_len]=0;
 
         TokenKind kind = getTokenKind(token);
-        printf("kind is %d\n", kind);
 
         if ( kind == INT_LITERAL || kind == IDENTIFIER )
         {
@@ -272,16 +270,19 @@ Expression* parseExpression(Context* context)
             strcpy(lpar->token, "(");
             lpar->kind = LEFT_PAREN;
 
-            stack[stack_ptr++] = lpar;
+            stack[stack_ptr] = lpar;
+            stack_ptr++;
         }
         else if ( !strcmp(token, ")") )
         {
             //if token is ")" pop everything except "(" from stack and push to output, then pop "("
-            while ( stack[stack_ptr]->kind != LEFT_PAREN )
+            while ( stack_ptr > 0 && stack[stack_ptr-1]->kind != LEFT_PAREN )
             {
-                node->next = stack[--stack_ptr];
+                stack_ptr--;
+                node->next = stack[stack_ptr];
                 node = node->next;
             }
+
             stack_ptr--;
         }
         else
@@ -303,12 +304,12 @@ Expression* parseExpression(Context* context)
             ALLOC(opr, ExpressionNode);
             strcpy(opr->token, token);
             opr->kind = kind;
+            opr->prec = prec;
 
             stack[stack_ptr++] = opr;
         }
     }
 
-    printf("after loop stack ptr is %d\n", stack_ptr);
     //at the end, pop from stack and move to output queue
     while ( stack_ptr > 0 ) 
     {
@@ -319,14 +320,8 @@ Expression* parseExpression(Context* context)
 
     expression->last_node = node;
 
-    debugLog(context, "parse exp finished");
-    node = expression->first_node;
-    while ( node != NULL ) 
-    {
-        debugLog(context, "--%s--\n", node->token);
-        node = node->next;
-    }
-    
+    dumpExpression(context, expression);
+
     return expression;
 }
 

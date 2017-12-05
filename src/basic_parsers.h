@@ -10,6 +10,6 @@ int parseIdentifier(Context* context, char* token);
 int strToOp(const char* str);
 const char* opToStr(int op);
 
-void getNextToken(Context* context, char* token);
+int getNextToken(Context* context, char* token);
 
 #endif

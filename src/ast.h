@@ -113,6 +113,7 @@ typedef struct ExpressionNode
 {
     char token[32];
     TokenKind kind;
+    //TODO: remove this field
     int  prec;
 
     struct ExpressionNode* next;

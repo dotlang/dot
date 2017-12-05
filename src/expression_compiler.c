@@ -13,13 +13,13 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
     {
         if ( node->kind == INT_LITERAL )
         {
-            printf("int pushed: %s\n", node->token);
             stack[stack_ptr++] = LLVMConstInt(intType, atoi(node->token), true);
         }
         else
         {
             LLVMValueRef op1 = stack[--stack_ptr];
             LLVMValueRef op2 = stack[--stack_ptr];
+
             if ( node->kind == OP_ADD )
                 stack[stack_ptr++] = LLVMBuildAdd(context->builder, op1, op2, "temp");
             else if ( node->kind == OP_SUB )
@@ -38,7 +38,7 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
 
                 LLVMValueRef rem = LLVMBuildSRem(context->builder, op2, op1, "temp");
                 LLVMValueRef is_divisible =  LLVMBuildICmp(context->builder, LLVMIntEQ, rem, zero, "is_divisible");
-                return  LLVMBuildSelect(context->builder, is_divisible, one, zero, "int_is_divisible");
+                stack[stack_ptr++] =  LLVMBuildSelect(context->builder, is_divisible, one, zero, "int_is_divisible");
             }
         }
 
