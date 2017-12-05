@@ -354,17 +354,14 @@ FunctionDecl* parseFunctionDecl(Context* context)
     if ( !strcmp(token, "int") )
     {
         getNextToken(context, token);
-        printf("found int\n");
         getNextToken(context, token);
         if ( strcmp(token, "{") ) return NULL;
 
         Binding* binding = NULL;
-        printf("proce1\n");
 
         while ( 1 ) 
         {
             peekNextToken(context, token);
-            printf(">>> got next token: <%s>\n", token);
             if ( !strcmp(token, "}") ) 
             {
                 getNextToken(context, token);
@@ -375,7 +372,6 @@ FunctionDecl* parseFunctionDecl(Context* context)
             if ( !strcmp(token, "::") )
             {
                 getNextToken(context, token);
-                printf("processing return exp\n");
                 temp_binding = (Binding*)calloc(1, sizeof(Binding));
                 temp_binding->is_return = true;
                 temp_binding->expression = parseExpression(context);
@@ -403,8 +399,6 @@ FunctionDecl* parseFunctionDecl(Context* context)
     else
     {
         //this is an expression in front of `funcName := () ->`
-        printf("undoing %s\n", token);
-        undoToken(context, token);
         ALLOC(binding, Binding);
         function_decl->last_binding = function_decl->first_binding = binding;
         function_decl->first_binding->expression = parseExpression(context);
@@ -427,7 +421,6 @@ Binding* parseBinding(Context* context)
 
     len = getNextToken(context, token);
     if ( strcmp(token, ":=") ) return NULL;
-    printf("parsing function\n");
 
     peekNextToken(context, token);
 
@@ -435,12 +428,10 @@ Binding* parseBinding(Context* context)
     {
         //parse a code block
         binding->function_decl = parseFunctionDecl(context);
-        printf("parsed function %s\n", binding->lhs);
     }
     else
     {
         binding->expression = parseExpression(context);
-        printf("parsed an expression for <%s>\n", binding->lhs);
     }
 
     return binding;
