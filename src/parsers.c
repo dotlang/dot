@@ -203,6 +203,11 @@ TokenKind getTokenKind(char* token)
     if ( !strcmp(token, ")") ) return RIGHT_PAREN;
     if ( !strcmp(token, "+") ) return OP_ADD;
     if ( !strcmp(token, "-") ) return OP_SUB;
+    if ( !strcmp(token, "*") ) return OP_MUL;
+    if ( !strcmp(token, "/") ) return OP_DIV;
+    if ( !strcmp(token, "%") ) return OP_REM;
+    if ( !strcmp(token, "%%") ) return OP_DVT;
+
     if ( isdigit(token[0]) ) return INT_LITERAL;
 
     return IDENTIFIER;
@@ -214,8 +219,11 @@ int getOperatorPrecedence(TokenKind kind)
     {
         case OP_ADD: return 2;
         case OP_SUB: return 2;
-        default:
-                     abort();
+        case OP_MUL: return 3;
+        case OP_DIV: return 3;
+        case OP_REM: return 3;
+        case OP_DVT: return 3;
+        default: abort();
     }
 
     abort();

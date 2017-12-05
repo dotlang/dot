@@ -102,7 +102,11 @@ typedef enum
     LEFT_PAREN,
     RIGHT_PAREN,
     OP_ADD,
-    OP_SUB
+    OP_SUB,
+    OP_MUL,
+    OP_DIV,
+    OP_REM,
+    OP_DVT
 } TokenKind;
 
 typedef struct ExpressionNode

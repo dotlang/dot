@@ -23,7 +23,23 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
             if ( node->kind == OP_ADD )
                 stack[stack_ptr++] = LLVMBuildAdd(context->builder, op1, op2, "temp");
             else if ( node->kind == OP_SUB )
-                stack[stack_ptr++] = LLVMBuildSub(context->builder, op1, op2, "temp");
+                stack[stack_ptr++] = LLVMBuildSub(context->builder, op2, op1, "temp");
+            else if ( node->kind == OP_MUL )
+                stack[stack_ptr++] = LLVMBuildMul(context->builder, op1, op2, "temp");
+            else if ( node->kind == OP_DIV )
+                stack[stack_ptr++] = LLVMBuildSDiv(context->builder, op2, op1, "temp");
+            else if ( node->kind == OP_REM )
+                stack[stack_ptr++] = LLVMBuildSRem(context->builder, op2, op1, "temp");
+            else if ( node->kind == OP_DVT )
+            {
+                LLVMTypeRef intType = LLVMIntType(32);
+                LLVMValueRef one = LLVMConstInt(intType, 1, true);
+                LLVMValueRef zero = LLVMConstInt(intType, 0, true);
+
+                LLVMValueRef rem = LLVMBuildSRem(context->builder, op2, op1, "temp");
+                LLVMValueRef is_divisible =  LLVMBuildICmp(context->builder, LLVMIntEQ, rem, zero, "is_divisible");
+                return  LLVMBuildSelect(context->builder, is_divisible, one, zero, "int_is_divisible");
+            }
         }
 
         node = node->next;

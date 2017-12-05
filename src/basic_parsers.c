@@ -157,11 +157,23 @@ void getNextToken(Context* context, char* token)
     char c = (char)fgetc(context->input_file);
 
     if ( c == EOF ) return;
-    if ( c == '+' || c == '-' )
+    if ( strchr("+-*/[]().,", c) != NULL )
     {
         token[0]=c;
         token[1]=0;
         return;
+    }
+
+    if ( c == '%' )
+    {
+        c = (char)fgetc(context->input_file);
+        if ( c == '%' )
+        {
+            token[0] = token[1] = '%';
+            token[2] = 0;
+            return;
+        }
+        ungetc(c, context->input_file);
     }
 
     while ( isdigit(c) )
@@ -169,7 +181,6 @@ void getNextToken(Context* context, char* token)
         token[token_len++] = c;
         c = (char)fgetc(context->input_file);
     };
-
     ungetc(c, context->input_file);
 
     token[token_len] = 0;
