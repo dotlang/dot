@@ -15,9 +15,18 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
         {
             stack[stack_ptr++] = LLVMConstInt(intType, atoi(node->token), true);
         }
-        else
+        else if ( node->kind == IDENTIFIER )
         {
-            LLVMValueRef op1 = stack[--stack_ptr];
+			LLVMValueRef ptr = (LLVMValueRef)ht_get(context->function_bindings, node->token);
+			//if this is a function level binding, load it's value from stack
+			if ( ptr != NULL )
+            {
+                stack[stack_ptr++] = LLVMBuildLoad(context->builder, ptr, "");
+            }
+		}
+		else
+		{
+			LLVMValueRef op1 = stack[--stack_ptr];
             LLVMValueRef op2 = stack[--stack_ptr];
 
             if ( node->kind == OP_ADD )

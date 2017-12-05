@@ -6,8 +6,8 @@
 #include "basic_parsers.h"
 #include "debug_helpers.h"
 
-/* Expression* parseExpression(Context*); */
-/* Binding* parseBinding(Context*); */
+Expression* parseExpression(Context*);
+Binding* parseBinding(Context*);
 
 /* BasicExpression* parseBasicExpression(Context* context) */
 /* { */
@@ -207,6 +207,8 @@ TokenKind getTokenKind(char* token)
     if ( !strcmp(token, "/") ) return OP_DIV;
     if ( !strcmp(token, "%") ) return OP_REM;
     if ( !strcmp(token, "%%") ) return OP_DVT;
+    if ( !strcmp(token, "{") ) return LEFT_BRACE;
+    if ( !strcmp(token, "}") ) return RIGHT_BRACE;
 
     if ( isdigit(token[0]) ) return INT_LITERAL;
 
@@ -241,17 +243,28 @@ Expression* parseExpression(Context* context)
     ALLOC(expression, Expression);
 
     ExpressionNode* node = NULL;
-    char token[32];
     ExpressionNode* stack[100];
+    TokenKind kind = NA;
+    char token[32];
     int stack_ptr = 0;
 
     while ( 1 )
     {
+        //ignore newLine if it's the first thing we see
+        if ( node != NULL && newLineAhead(context) )
+        {
+            if ( kind == IDENTIFIER ||
+                 kind == INT_LITERAL ||
+                 kind == RIGHT_PAREN )
+            {
+                break;
+            }
+        }
+
         int token_len = getNextToken(context, token);
         if ( token_len == 0 ) break;
-        token[token_len]=0;
 
-        TokenKind kind = getTokenKind(token);
+        kind = getTokenKind(token);
 
         if ( kind == INT_LITERAL || kind == IDENTIFIER )
         {
@@ -325,22 +338,110 @@ Expression* parseExpression(Context* context)
     return expression;
 }
 
+FunctionDecl* parseFunctionDecl(Context* context)
+{
+    ALLOC(function_decl, FunctionDecl);
+
+    char token[256];
+    getNextToken(context, token);
+    if ( strcmp(token, "(") ) return NULL;
+    getNextToken(context, token);
+    if ( strcmp(token, ")") ) return NULL;
+    getNextToken(context, token);
+    if ( strcmp(token, "->") ) return NULL;
+
+    peekNextToken(context, token);
+    if ( !strcmp(token, "int") )
+    {
+        getNextToken(context, token);
+        printf("found int\n");
+        getNextToken(context, token);
+        if ( strcmp(token, "{") ) return NULL;
+
+        Binding* binding = NULL;
+        printf("proce1\n");
+
+        while ( 1 ) 
+        {
+            peekNextToken(context, token);
+            printf(">>> got next token: <%s>\n", token);
+            if ( !strcmp(token, "}") ) 
+            {
+                getNextToken(context, token);
+                break;
+            }
+
+            Binding* temp_binding = NULL;
+            if ( !strcmp(token, "::") )
+            {
+                getNextToken(context, token);
+                printf("processing return exp\n");
+                temp_binding = (Binding*)calloc(1, sizeof(Binding));
+                temp_binding->is_return = true;
+                temp_binding->expression = parseExpression(context);
+            }
+            else
+            {
+                temp_binding = parseBinding(context);
+            }
+
+            if ( temp_binding == NULL ) break;
+            if ( function_decl->first_binding == NULL )
+            {
+                function_decl->first_binding = temp_binding;
+                binding = temp_binding;
+            }
+            else
+            {
+                binding->next = temp_binding;
+                binding = binding->next;
+            }
+        }
+
+        function_decl->last_binding = binding;
+    }
+    else
+    {
+        //this is an expression in front of `funcName := () ->`
+        printf("undoing %s\n", token);
+        undoToken(context, token);
+        ALLOC(binding, Binding);
+        function_decl->last_binding = function_decl->first_binding = binding;
+        function_decl->first_binding->expression = parseExpression(context);
+        function_decl->first_binding->is_return = true;
+    }
+
+    return function_decl;
+}
+
 Binding* parseBinding(Context* context)
 {
     ALLOC(binding, Binding);
 
     char token[256];
-    int result = parseIdentifier(context, token);
-    if ( result == FAIL ) return NULL;
+    int len = getNextToken(context, token);
+    if ( len == 0 ) return NULL;
+    
     strcpy(binding->lhs, token);
+    debugLog(context, "Parsing binding: %s", binding->lhs);
 
-    EXPECT(":=");
+    len = getNextToken(context, token);
+    if ( strcmp(token, ":=") ) return NULL;
+    printf("parsing function\n");
 
-    debugLog(context, "Parsing binding: %s", token);
-    EXPECT("()");
-    EXPECT("->");
+    peekNextToken(context, token);
 
-    binding->expression = parseExpression(context);
+    if ( !strcmp(token, "(") )
+    {
+        //parse a code block
+        binding->function_decl = parseFunctionDecl(context);
+        printf("parsed function %s\n", binding->lhs);
+    }
+    else
+    {
+        binding->expression = parseExpression(context);
+        printf("parsed an expression for <%s>\n", binding->lhs);
+    }
 
     return binding;
 }

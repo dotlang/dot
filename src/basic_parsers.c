@@ -159,6 +159,49 @@ void undoChar(Context* context, char c)
     ungetc(c, context->input_file);
 }
 
+//TODO: remove this and instead add peekToken
+void undoToken(Context* context, char* token)
+{
+    for(int i=strlen(token)-1;i>=0;i--)
+        undoChar(context, token[i]);
+}
+
+bool newLineAhead(Context* context)
+{
+    while ( 1 ) 
+    {
+        char c = getChar(context);
+
+        if ( c == '#' )
+        {
+            char temp[1024];
+            fgets(temp, 1024, context->input_file);
+            return true;
+        }
+        else if ( isspace(c) )
+        {
+            if ( c == '\n' ) return true;
+        }
+        else
+        {
+            undoChar(context, c);
+            return false;
+        }
+    }
+}
+
+//TODO: remove int return. we don't need it
+int peekNextToken(Context* context, char* token)
+{
+    SAVE_POSITION;
+
+    int result = getNextToken(context, token);
+
+    RESTORE_POSITION;
+
+    return result;
+}
+
 int getNextToken(Context* context, char* token)
 {
     while ( 1 ) 
@@ -184,24 +227,28 @@ int getNextToken(Context* context, char* token)
             if ( c == '%' )
             {
                 token[0] = token[1] = '%';
+                token[2]=0;
                 return 2;
             }
             undoChar(context, c);
             token[0] = '%';
+            token[1] = 0;
             return 1;
         }
 
         if ( c == ':' )
         {
             c = getChar(context);
-            if ( c == '=' )
+            if ( c == ':' || c == '=' )
             {
                 token[0] = ':';
-                token[1] = '=';
+                token[1] = c;
+                token[2] = 0;
                 return 2;
             }
             undoChar(context, c);
             token[0] = ':';
+            token[1] = 0;
             return 1;
         }
 
@@ -212,17 +259,20 @@ int getNextToken(Context* context, char* token)
             {
                 token[0] = '-';
                 token[1] = '>';
+                token[2] = 0;
                 return 2;
             }
             undoChar(context, c);
             token[0] = '-';
+            token[1] = 0;
             return 1;
         }
         
         //check for single character tokens
-        if ( strchr("+-*/[]().,", c) != NULL )
+        if ( strchr("+-*/{}[]().,", c) != NULL )
         {
             token[0] = c;
+            token[1] = 0;
             return 1;
         }
 
@@ -236,6 +286,7 @@ int getNextToken(Context* context, char* token)
                 c = getChar(context);
             }
             undoChar(context, c);
+            token[len] = 0;
             return len;
         }
 
@@ -248,6 +299,7 @@ int getNextToken(Context* context, char* token)
                 c = getChar(context);
             }
             undoChar(context, c);
+            token[len] = 0;
 
             return len;
         }

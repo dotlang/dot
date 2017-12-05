@@ -65,38 +65,39 @@ typedef struct
 
 
 typedef struct Binding Binding;
-typedef struct FunctionDecl FunctionDecl;
 typedef struct Expression Expression;
 typedef struct ExpressionNode ExpressionNode;
+typedef struct BindingList Module;
+typedef struct BindingList FunctionDecl;
 
-typedef struct Module
+typedef struct BindingList
 {
     Binding* first_binding, *last_binding;
-} Module;
+} BindingList;
 
 typedef struct Binding
 {
     char lhs[32];
 
-    /* FunctionDecl* function_decl; */
+    //true, if this is a binding inside a function_decl and is prefixed with `::`
+    bool is_return;
+
+    //A binding can be either an expression or a function declaration
+    FunctionDecl* function_decl;
     Expression* expression;
 
     struct Binding* next;
 } Binding;
-
-/* typedef struct FunctionDecl */
-/* { */
-/*     //if the function has only one expression without code block, we will have only one binding */
-/*     Binding *first_binding, *last_binding; */
-/* } FunctionDecl; */
 
 typedef struct Expression
 {
     ExpressionNode *first_node, *last_node;
 } Expression;
 
+//TODO: rename left/right to open/cose
 typedef enum
 {
+    NA,
     INT_LITERAL,
     IDENTIFIER,
     LEFT_PAREN,
@@ -106,7 +107,9 @@ typedef enum
     OP_MUL,
     OP_DIV,
     OP_REM,
-    OP_DVT
+    OP_DVT,
+    LEFT_BRACE,
+    RIGHT_BRACE
 } TokenKind;
 
 typedef struct ExpressionNode

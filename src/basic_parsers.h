@@ -11,5 +11,9 @@ int strToOp(const char* str);
 const char* opToStr(int op);
 
 int getNextToken(Context* context, char* token);
+//TODO: remove this?
+void undoToken(Context* context, char* token);
+bool newLineAhead(Context* context);
+int peekNextToken(Context* context, char* token);
 
 #endif

@@ -52,6 +52,7 @@ void debugLogAddNewLine(Context* context)
 void dumpExpression(Context* context, Expression* expression)
 {
     if ( context->debug_mode != 1 ) return;
+    debugLog(context, "Dumping expression");
 
     ExpressionNode* node = expression->first_node;
     while ( node != NULL ) 
