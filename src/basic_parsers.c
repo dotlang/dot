@@ -5,6 +5,7 @@
 #include <libgen.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 #include "ast.h"
 #include "basic_parsers.h"
@@ -114,30 +115,62 @@ int parseIdentifier(Context* context, char* token)
     return OK;
 }
 
-int strToOp(const char* str)
-{
-    if ( !strcmp(str, "+") ) return OP_ADD;
-    if ( !strcmp(str, "-") ) return OP_SUB;
-    if ( !strcmp(str, "*") ) return OP_MUL;
-    if ( !strcmp(str, "/") ) return OP_DIV;
-    if ( !strcmp(str, "%") ) return OP_REM;
-    if ( !strcmp(str, "%%") ) return OP_DVT;
+/* int strToOp(const char* str) */
+/* { */
+/*     if ( !strcmp(str, "+") ) return OP_ADD; */
+/*     if ( !strcmp(str, "-") ) return OP_SUB; */
+/*     if ( !strcmp(str, "*") ) return OP_MUL; */
+/*     if ( !strcmp(str, "/") ) return OP_DIV; */
+/*     if ( !strcmp(str, "%") ) return OP_REM; */
+/*     if ( !strcmp(str, "%%") ) return OP_DVT; */
 
-    return OP_NOP;
+/*     return OP_NOP; */
+/* } */
+
+/* const char* opToStr(int op) */
+/* { */
+/*     switch ( op ) */
+/*     { */
+/*         case OP_ADD: return "+"; */
+/*         case OP_SUB: return "-"; */
+/*         case OP_MUL: return "*"; */
+/*         case OP_DIV: return "/"; */
+/*         case OP_REM: return "%"; */
+/*         case OP_DVT: return "%%"; */
+/*     } */
+
+    /* return "N/A"; */
+/* } */
+
+bool is_delimiter(char c)
+{
+    if ( c == EOF ) return true;
+    return strchr("\r\n+-=.,[]()", c) != NULL;
 }
 
-const char* opToStr(int op)
+void getNextToken(Context* context, char* token)
 {
-    switch ( op )
+    ignoreWhitespace(context);
+    int token_len = 0;
+    token[0]=0;
+
+    char c = (char)fgetc(context->input_file);
+
+    if ( c == EOF ) return;
+    if ( c == '+' || c == '-' )
     {
-        case OP_ADD: return "+";
-        case OP_SUB: return "-";
-        case OP_MUL: return "*";
-        case OP_DIV: return "/";
-        case OP_REM: return "%";
-        case OP_DVT: return "%%";
+        token[0]=c;
+        token[1]=0;
+        return;
     }
 
-    return "N/A";
+    while ( isdigit(c) )
+    {
+        token[token_len++] = c;
+        c = (char)fgetc(context->input_file);
+    };
 
+    ungetc(c, context->input_file);
+
+    token[token_len] = 0;
 }

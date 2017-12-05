@@ -1,273 +1,325 @@
 #include <string.h>
+#include <ctype.h>
 
 #include "parsers.h"
 #include "ast.h"
 #include "basic_parsers.h"
 #include "debug_helpers.h"
 
-Expression* parseExpression(Context*);
-Binding* parseBinding(Context*);
+/* Expression* parseExpression(Context*); */
+/* Binding* parseBinding(Context*); */
 
-BasicExpression* parseBasicExpression(Context* context)
-{
-    ALLOC(basic_expression, BasicExpression);
+/* BasicExpression* parseBasicExpression(Context* context) */
+/* { */
+/*     ALLOC(basic_expression, BasicExpression); */
 
-    char num[16];
-    if ( matchNumber(context, num) )
-    {
-        basic_expression->number = atoi(num);
-        return basic_expression;
-    }
+/*     char num[16]; */
+/*     if ( matchNumber(context, num) ) */
+/*     { */
+/*         basic_expression->number = atoi(num); */
+/*         return basic_expression; */
+/*     } */
 
-    IF_MATCH("(")
-    {
-        PARSE(basic_expression->expression, parseExpression);
-        IF_MATCH(")") return basic_expression;
-    }
-    //it might be an identifier
-    char token[256];
-    int result = parseIdentifier(context, token);
-    if ( result == OK ) 
-    {
-        strcpy(basic_expression->binding_name, token);
-        return basic_expression;
-    }
+/*     IF_MATCH("(") */
+/*     { */
+/*         PARSE(basic_expression->expression, parseExpression); */
+/*         IF_MATCH(")") return basic_expression; */
+/*     } */
+/*     //it might be an identifier */
+/*     char token[256]; */
+/*     int result = parseIdentifier(context, token); */
+/*     if ( result == OK ) */ 
+/*     { */
+/*         strcpy(basic_expression->binding_name, token); */
+/*         return basic_expression; */
+/*     } */
 
-    return NULL;
-}
+/*     return NULL; */
+/* } */
 
-TermExpression* parseTermExpression(Context* context)
-{
-    IF_MATCH("(")
-    {
-        IF_MATCH(")")
-        {
-            ALLOC(term_expression, TermExpression);
-            term_expression->op = OP_CAL;
-            return term_expression;
-        }
-    }
+/* TermExpression* parseTermExpression(Context* context) */
+/* { */
+/*     IF_MATCH("(") */
+/*     { */
+/*         IF_MATCH(")") */
+/*         { */
+/*             ALLOC(term_expression, TermExpression); */
+/*             term_expression->op = OP_CAL; */
+/*             return term_expression; */
+/*         } */
+/*     } */
 
-    return NULL;
-}
+/*     return NULL; */
+/* } */
 
-PrimaryExpression* parsePrimaryExpression(Context* context)
-{
-    ALLOC(primary_expression, PrimaryExpression);
-    PARSE(primary_expression->basic_expression, parseBasicExpression);
+/* PrimaryExpression* parsePrimaryExpression(Context* context) */
+/* { */
+/*     ALLOC(primary_expression, PrimaryExpression); */
+/*     PARSE(primary_expression->basic_expression, parseBasicExpression); */
 
-    struct PrimaryExpressionElement* element;
+/*     struct PrimaryExpressionElement* element; */
 
-    while ( 1 )
-    {
-        ALLOC(element_next, struct PrimaryExpressionElement);
+/*     while ( 1 ) */
+/*     { */
+/*         ALLOC(element_next, struct PrimaryExpressionElement); */
 
-        PARSE_ELSE(element_next->term_expression, parseTermExpression)
-        {
-            primary_expression->last_element = element;
-            return primary_expression;
-        }
+/*         PARSE_ELSE(element_next->term_expression, parseTermExpression) */
+/*         { */
+/*             primary_expression->last_element = element; */
+/*             return primary_expression; */
+/*         } */
 
-        if ( primary_expression->first_element == NULL )
-        {
-            primary_expression->first_element  = element_next;
-            element = element_next;
-        }
-        else
-        {
-            element->next = element_next;
-            element = element->next;
-        }
-    }
+/*         if ( primary_expression->first_element == NULL ) */
+/*         { */
+/*             primary_expression->first_element  = element_next; */
+/*             element = element_next; */
+/*         } */
+/*         else */
+/*         { */
+/*             element->next = element_next; */
+/*             element = element->next; */
+/*         } */
+/*     } */
 
-    return primary_expression;
-}
+/*     return primary_expression; */
+/* } */
 
-UnaryExpression* parseUnaryExpression(Context* context)
-{
-    ALLOC(unary_expression, UnaryExpression);
-    PARSE(unary_expression->primary_expression, parsePrimaryExpression);
+/* UnaryExpression* parseUnaryExpression(Context* context) */
+/* { */
+/*     ALLOC(unary_expression, UnaryExpression); */
+/*     PARSE(unary_expression->primary_expression, parsePrimaryExpression); */
 
-    return unary_expression;
-}
+/*     return unary_expression; */
+/* } */
 
-MulExpression* parseMulExpression(Context* context)
-{
-    ALLOC(mul_expression, MulExpression);
-    ALLOC(element, struct MulExpressionElement);
+/* MulExpression* parseMulExpression(Context* context) */
+/* { */
+/*     ALLOC(mul_expression, MulExpression); */
+/*     ALLOC(element, struct MulExpressionElement); */
 
-    mul_expression->first_element = mul_expression->last_element = element;
-    PARSE(element->unary_expression, parseUnaryExpression);
+/*     mul_expression->first_element = mul_expression->last_element = element; */
+/*     PARSE(element->unary_expression, parseUnaryExpression); */
 
-    element->op = OP_NOP;
+/*     element->op = OP_NOP; */
 
-    const char* ops[] = { "*", "/", "%%", "%" };
-    const char* op = matchLiterals(context, ops, 4);
+/*     const char* ops[] = { "*", "/", "%%", "%" }; */
+/*     const char* op = matchLiterals(context, ops, 4); */
 
-    while ( op != NULL )
-    {
-        ALLOC(element_next, struct MulExpressionElement);
-        element->next = element_next;
-        element = element->next;
+/*     while ( op != NULL ) */
+/*     { */
+/*         ALLOC(element_next, struct MulExpressionElement); */
+/*         element->next = element_next; */
+/*         element = element->next; */
 
-        element->op = strToOp(op);
+/*         element->op = strToOp(op); */
 
-        PARSE(element->unary_expression, parseUnaryExpression);
+/*         PARSE(element->unary_expression, parseUnaryExpression); */
 
-        op = matchLiterals(context, ops, 4);
-    }
+/*         op = matchLiterals(context, ops, 4); */
+/*     } */
 
-    mul_expression->last_element = element;
+/*     mul_expression->last_element = element; */
 
-    //TODO: scan for operators
-    return mul_expression;
-}
+/*     //TODO: scan for operators */
+/*     return mul_expression; */
+/* } */
 
-AddExpression* parseAddExpression(Context* context)
-{
-    ALLOC(add_expression, AddExpression);
-    ALLOC(element, struct AddExpressionElement);
+/* AddExpression* parseAddExpression(Context* context) */
+/* { */
+/*     ALLOC(add_expression, AddExpression); */
+/*     ALLOC(element, struct AddExpressionElement); */
 
-    add_expression->first_element = add_expression->last_element = element;
-    PARSE(element->mul_expression, parseMulExpression);
+/*     add_expression->first_element = add_expression->last_element = element; */
+/*     PARSE(element->mul_expression, parseMulExpression); */
 
-    //for the first element there is no op
-    element->op = OP_NOP;
+/*     //for the first element there is no op */
+/*     element->op = OP_NOP; */
 
-    const char* ops[] = { "+", "-" };
-    const char* op = matchLiterals(context, ops, 2);
+/*     const char* ops[] = { "+", "-" }; */
+/*     const char* op = matchLiterals(context, ops, 2); */
 
-    //it's fine if we no longer see operators
-    while ( op != NULL ) 
-    {
-        ALLOC(element_next, struct AddExpressionElement);
-        element->next = element_next;
-        element = element->next;
+/*     //it's fine if we no longer see operators */
+/*     while ( op != NULL ) */ 
+/*     { */
+/*         ALLOC(element_next, struct AddExpressionElement); */
+/*         element->next = element_next; */
+/*         element = element->next; */
 
-        element->op = strToOp(op);
+/*         element->op = strToOp(op); */
 
-        PARSE(element->mul_expression, parseMulExpression);
+/*         PARSE(element->mul_expression, parseMulExpression); */
 
-        op = matchLiterals(context, ops, 2);
-    }
-    add_expression->last_element = element;
+/*         op = matchLiterals(context, ops, 2); */
+/*     } */
+/*     add_expression->last_element = element; */
 
-    return add_expression;
-}
+/*     return add_expression; */
+/* } */
 
-ShiftExpression* parseShiftExpression(Context* context)
-{
-    ALLOC(shift_expression, ShiftExpression);
-    ALLOC(element, struct ShiftExpressionElement);
+/* ShiftExpression* parseShiftExpression(Context* context) */
+/* { */
+/*     ALLOC(shift_expression, ShiftExpression); */
+/*     ALLOC(element, struct ShiftExpressionElement); */
 
-    shift_expression->first_element = shift_expression->last_element = element;
+/*     shift_expression->first_element = shift_expression->last_element = element; */
 
-    element->op = OP_NOP;
-    PARSE(element->add_expression, parseAddExpression);
-    //TODO: scan for operators
-    //
-    return shift_expression;
-}
+/*     element->op = OP_NOP; */
+/*     PARSE(element->add_expression, parseAddExpression); */
+/*     //TODO: scan for operators */
+/*     // */
+/*     return shift_expression; */
+/* } */
 
-CmpExpression* parseCmpExpression(Context* context)
-{
-    ALLOC(cmp_expression, CmpExpression);
-    ALLOC(element, struct CmpExpressionElement);
+/* CmpExpression* parseCmpExpression(Context* context) */
+/* { */
+/*     ALLOC(cmp_expression, CmpExpression); */
+/*     ALLOC(element, struct CmpExpressionElement); */
 
-    cmp_expression->first_element = cmp_expression->last_element = element;
+/*     cmp_expression->first_element = cmp_expression->last_element = element; */
 
-    element->op = OP_NOP;
-    PARSE(element->shift_expression, parseShiftExpression);
-    //TODO: scan for operators
-    return cmp_expression;
-}
+/*     element->op = OP_NOP; */
+/*     PARSE(element->shift_expression, parseShiftExpression); */
+/*     //TODO: scan for operators */
+/*     return cmp_expression; */
+/* } */
 
-EqExpression* parseEqExpression(Context* context)
-{
-    ALLOC(eq_expression, EqExpression);
-    ALLOC(element, struct EqExpressionElement);
+/* EqExpression* parseEqExpression(Context* context) */
+/* { */
+/*     ALLOC(eq_expression, EqExpression); */
+/*     ALLOC(element, struct EqExpressionElement); */
 
-    eq_expression->first_element = eq_expression->last_element = element;
+/*     eq_expression->first_element = eq_expression->last_element = element; */
 
-    element->op = OP_NOP;
-    PARSE(element->cmp_expression, parseCmpExpression);
-    //TODO: scan for operators
+/*     element->op = OP_NOP; */
+/*     PARSE(element->cmp_expression, parseCmpExpression); */
+/*     //TODO: scan for operators */
     
-    return eq_expression;
+/*     return eq_expression; */
+/* } */
+
+TokenKind getTokenKind(char* token)
+{
+    if ( !strcmp(token, "(") ) return LEFT_PAREN;
+    if ( !strcmp(token, ")") ) return RIGHT_PAREN;
+    if ( !strcmp(token, "+") ) return OP_ADD;
+    if ( !strcmp(token, "-") ) return OP_SUB;
+    if ( isdigit(token[0]) ) return INT_LITERAL;
+
+    return IDENTIFIER;
 }
 
-//Expression         = MathExpression 
+int getOperatorPrecedence(TokenKind kind)
+{
+    switch ( kind )
+    {
+        case OP_ADD: return 2;
+        case OP_SUB: return 2;
+        default:
+                     abort();
+    }
+
+    abort();
+}
+            
+bool isLeftAssociative(TokenKind kind)
+{
+    return true;
+}
+
 Expression* parseExpression(Context* context)
 {
-    ALLOC(exp, Expression);
-    ALLOC(element, struct ExpressionElement);
+    //TODO: there are a lot of checks that can be done here to make sure exp has correct syntax
+    //TODO: remove lpar and rpar from token kinds
+    ALLOC(expression, Expression);
 
-    exp->first_element = exp->last_element = element;
-
-    element->op = OP_NOP;
-    PARSE(element->eq_expression, parseEqExpression);
-    //TODO: scan for and/or/xor/...
-    
-    return exp;
-}
-
-CodeBlock* parseCodeBlock(Context* context)
-{
-    ALLOC(code_block, CodeBlock);
-    struct CodeBlockElement* element = NULL;
+    ExpressionNode* node = NULL;
+    char token[32];
+    ExpressionNode* stack[100];
+    int stack_ptr = 0;
 
     while ( 1 )
     {
-        IF_MATCH("}")
-        {
-            code_block->last_element = element;
-            return code_block;
-        }
+        printf("reading next token\n");
+        getNextToken(context, token);
+        if ( token[0] == 0 ) break;
+        printf("processing next token: <%s>\n", token);
 
-        ALLOC(temp_element, struct CodeBlockElement);
-        if ( code_block->first_element == NULL )
+        TokenKind kind = getTokenKind(token);
+        printf("kind is %d\n", kind);
+
+        if ( kind == INT_LITERAL || kind == IDENTIFIER )
         {
-            code_block->first_element = temp_element;
-            element = temp_element;
+            //if token is number or identifier, just move it to output
+            ALLOC(temp_node, ExpressionNode);
+            strcpy(temp_node->token, token);
+            temp_node->kind = kind;
+
+            if ( node == NULL ) { node = expression->first_node = temp_node; }
+            else { node->next = temp_node; node = node->next; } 
+        }
+        else if ( !strcmp(token, "(") )
+        {
+            //if token is "(" push it into stack
+            ALLOC(lpar, ExpressionNode);
+            strcpy(lpar->token, "(");
+            lpar->kind = LEFT_PAREN;
+
+            stack[stack_ptr++] = lpar;
+        }
+        else if ( !strcmp(token, ")") )
+        {
+            //if token is ")" pop everything except "(" from stack and push to output, then pop "("
+            while ( stack[stack_ptr]->kind != LEFT_PAREN )
+            {
+                node->next = stack[--stack_ptr];
+                node = node->next;
+            }
+            stack_ptr--;
         }
         else
         {
-            element->next = temp_element;
-            element = element->next;
-        }
+            int prec = getOperatorPrecedence(kind);
 
-        IF_MATCH("::")
-        {
-            PARSE(element->return_expression, parseExpression);
-        }
-        else
-        {
-            PARSE(element->binding, parseBinding);
+            //if token is opreator first check precedence then push to stack
+            while ( stack_ptr > 0 &&
+                    stack[stack_ptr-1]->kind != LEFT_PAREN &&
+                    ( ( stack[stack_ptr-1]->prec > prec ) ||
+                      ( stack[stack_ptr-1]->prec == prec && isLeftAssociative(stack[stack_ptr-1]->kind) )
+                    ) )
+            {
+                stack_ptr--;
+                node->next = stack[stack_ptr];
+                node = node->next;
+            }
+
+            ALLOC(opr, ExpressionNode);
+            strcpy(opr->token, token);
+            opr->kind = kind;
+
+            stack[stack_ptr++] = opr;
         }
     }
-}
 
-FunctionDecl* parseFunctionDecl(Context* context)
-{
-    ALLOC(function_decl, FunctionDecl);
-
-    EXPECT("()");
-    EXPECT("->");
-
-    IF_MATCH("int")
+    printf("after loop stack ptr is %d\n", stack_ptr);
+    //at the end, pop from stack and move to output queue
+    while ( stack_ptr > 0 ) 
     {
-        IF_MATCH("{")
-        {
-            
-            PARSE(function_decl->code_block, parseCodeBlock);
-        }
-    }
-    else
-    {
-        PARSE(function_decl->expression, parseExpression);
+        stack_ptr--;
+        node->next = stack[stack_ptr];
+        node = node->next;
     }
 
-    return function_decl;
+    expression->last_node = node;
+
+    debugLog(context, "parse exp finished");
+    node = expression->first_node;
+    while ( node != NULL ) 
+    {
+        debugLog(context, "--%s--\n", node->token);
+        node = node->next;
+    }
+    
+    return expression;
 }
 
 Binding* parseBinding(Context* context)
@@ -282,12 +334,10 @@ Binding* parseBinding(Context* context)
     EXPECT(":=");
 
     debugLog(context, "Parsing binding: %s", token);
+    EXPECT("()");
+    EXPECT("->");
 
-    PARSE_ELSE(binding->function_decl, parseFunctionDecl)
-    {
-        debugLog(context, "%s is an expression", token);
-        PARSE(binding->expression , parseExpression);
-    }
+    binding->expression = parseExpression(context);
 
     return binding;
 }
@@ -295,28 +345,33 @@ Binding* parseBinding(Context* context)
 Module* parseModule(Context* context)
 {
     ALLOC(module, Module);
-    struct ModuleElement* element = NULL;
+    Binding* binding;
 
     while ( 1 ) 
     {
-        ALLOC(temp_element, struct ModuleElement);
+        ALLOC(temp_binding, Binding);
 
-        PARSE_ELSE(temp_element->binding, parseBinding)
+        temp_binding = parseBinding(context);
+
+        if ( temp_binding == NULL )
         {
-            module->last_element = element;
+            module->last_binding = binding;
             return module;
         }
 
-        if ( module->first_element == NULL )
+        if ( module->first_binding == NULL )
         {
-            module->first_element = temp_element;
-            element = temp_element;
+            module->first_binding = temp_binding;
+            binding = temp_binding;
         }
         else
         {
-            element->next = temp_element;
-            element = element->next;
+            binding->next = temp_binding;
+            binding = binding->next;
         }
     }
+
+    module->last_binding = binding;
+    return module;
 }
 
