@@ -59,19 +59,13 @@ Expression* parseExpression(Context* context)
         {
             ALLOC_NODE(temp_node, token, kind);
 
-            peekNextToken(context, token);
-            if ( !strcmp(token, "(") )
+            if ( matchLiteral(context, OPEN_PAREN) )
             {
-                //this is a function call
-                getNextToken(context, token);
-
                 //add it to stack
                 temp_node->kind = FN_CALL;
 
-                peekNextToken(context, token);
-                if ( !strcmp(token, ")" ) )
+                if ( matchLiteral(context, CLOSE_PAREN) )
                 {
-                    getNextToken(context, token);
                     //this is a function call without arg
                     //do not add it to the stack but add to the output
                     if ( node == NULL ) { node = expression->first_node = temp_node; }
@@ -175,36 +169,24 @@ FunctionDecl* parseFunctionDecl(Context* context)
 {
     ALLOC(function_decl, FunctionDecl);
 
-    char token[256];
-    getNextToken(context, token);
-    if ( strcmp(token, "(") ) return NULL;
-    getNextToken(context, token);
-    if ( strcmp(token, ")") ) return NULL;
-    getNextToken(context, token);
-    if ( strcmp(token, "->") ) return NULL;
+    //TODO: replace this method with matchToken which accepts token type instead of string
+    if ( !matchLiteral(context, OPEN_PAREN) ) return NULL;
+    if ( !matchLiteral(context, CLOSE_PAREN) ) return NULL;
+    if ( !matchLiteral(context, OP_ARROW) ) return NULL;
 
-    peekNextToken(context, token);
-    if ( !strcmp(token, "int") )
+    if ( matchText(context, "int") )
     {
-        getNextToken(context, token);
-        getNextToken(context, token);
-        if ( strcmp(token, "{") ) return NULL;
+        if ( !matchLiteral(context, OPEN_BRACE ) ) return NULL;
 
         Binding* binding = NULL;
 
         while ( 1 ) 
         {
-            peekNextToken(context, token);
-            if ( !strcmp(token, "}") ) 
-            {
-                getNextToken(context, token);
-                break;
-            }
+            if ( matchLiteral(context, CLOSE_BRACE) ) break;
 
             Binding* temp_binding = NULL;
-            if ( !strcmp(token, "::") )
+            if ( matchLiteral(context, OP_RETURN) )
             {
-                getNextToken(context, token);
                 temp_binding = (Binding*)calloc(1, sizeof(Binding));
                 temp_binding->is_return = true;
                 temp_binding->expression = parseExpression(context);
@@ -231,6 +213,7 @@ FunctionDecl* parseFunctionDecl(Context* context)
     }
     else
     {
+        debugLog(context, "function's result is simple expression");
         //this is an expression in front of `funcName := () ->`
         ALLOC(binding, Binding);
         function_decl->last_binding = function_decl->first_binding = binding;
@@ -245,27 +228,28 @@ Binding* parseBinding(Context* context)
 {
     ALLOC(binding, Binding);
 
-    char token[256];
-    getNextToken(context, token);
-    if ( token[0] == 0 ) return NULL;
-    
-    strcpy(binding->lhs, token);
+    getNextToken(context, binding->lhs);
+    if ( binding->lhs[0] == 0 ) return NULL;
+
+    if ( getTokenKind(binding->lhs) != IDENTIFIER )
+    {
+        printf("Invalid binding name: %s\n", binding->lhs);
+        abort();
+    }
+
     debugLog(context, "Parsing binding: %s", binding->lhs);
 
-    getNextToken(context, token);
-    if ( strcmp(token, ":=") ) return NULL;
+    if ( !matchLiteral(context, OP_BIND) ) return NULL;
 
-    peekNextToken(context, token);
-
-    if ( !strcmp(token, "(") )
+    SAVE_POSITION;
+    binding->function_decl = parseFunctionDecl(context);
+    if ( binding->function_decl == NULL )
     {
-        //parse a code block
-        binding->function_decl = parseFunctionDecl(context);
-    }
-    else
-    {
+        RESTORE_POSITION;
+        debugLog(context, "%s is an expression.", binding->lhs);
         binding->expression = parseExpression(context);
     }
+    else debugLog(context, "%s is a function binding", binding->lhs);
 
     return binding;
 }

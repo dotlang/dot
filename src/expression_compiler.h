@@ -15,6 +15,7 @@
 #include "llvm-c/TargetMachine.h"
 #include "parsers.h"
 #include "ast.h"
+#include "stack.h"
 
 LLVMValueRef compileExpression(Context* context, Expression* expression);
 

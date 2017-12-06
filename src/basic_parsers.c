@@ -11,9 +11,6 @@
 #include "basic_parsers.h"
 #include "debug_helpers.h"
 
-#define SAVE_POSITION long initial_position = ftell(context->input_file)
-#define RESTORE_POSITION fseek(context->input_file, initial_position, SEEK_SET)
-
 char getChar(Context* context)
 {
     char c= (char)fgetc(context->input_file);
@@ -52,18 +49,21 @@ bool newLineAhead(Context* context)
 
 TokenKind getTokenKind(char* token)
 {
-    if ( !strcmp(token, "(") ) return OPEN_PAREN;
-    if ( !strcmp(token, ")") ) return CLOSE_PAREN;
-    if ( !strcmp(token, "+") ) return OP_ADD;
-    if ( !strcmp(token, "-") ) return OP_SUB;
-    if ( !strcmp(token, "*") ) return OP_MUL;
-    if ( !strcmp(token, "/") ) return OP_DIV;
-    if ( !strcmp(token, "%") ) return OP_REM;
-    if ( !strcmp(token, "%%") ) return OP_DVT;
-    if ( !strcmp(token, "{") ) return OPEN_BRACE;
-    if ( !strcmp(token, "}") ) return CLOSE_BRACE;
-    if ( !strcmp(token, ",") ) return COMMA;
-
+    int len = strlen(token);
+    if ( len == 1 && token[0] == '(') return OPEN_PAREN;
+    if ( len == 1 && token[0] == ')') return CLOSE_PAREN;
+    if ( len == 1 && token[0] == '+') return OP_ADD;
+    if ( len == 1 && token[0] == '-') return OP_SUB;
+    if ( len == 1 && token[0] == '*') return OP_MUL;
+    if ( len == 1 && token[0] == '/') return OP_DIV;
+    if ( len == 1 && token[0] == '%') return OP_REM;
+    if ( len == 1 && token[0] == '{') return OPEN_BRACE;
+    if ( len == 1 && token[0] == '}') return CLOSE_BRACE;
+    if ( len == 1 && token[0] == ',') return COMMA;
+    if ( len == 2 && token[0] == '%' && token[1] == '%' )  return OP_DVT;
+    if ( len == 2 && token[0] == ':' && token[1] == '=' )  return OP_BIND;
+    if ( len == 2 && token[0] == ':' && token[1] == ':' )  return OP_RETURN;
+    if ( len == 2 && token[0] == '-' && token[1] == '>' )  return OP_ARROW;
     if ( isdigit(token[0]) ) return INT_LITERAL;
 
     return IDENTIFIER;
@@ -90,14 +90,44 @@ bool isLeftAssociative(TokenKind kind)
     return true;
 }
 
-//TODO: make these efficient by caching next token in peek token instead of changing file ptr
-void peekNextToken(Context* context, char* token)
+bool matchText(Context* context, const char* text)
 {
+    char token[256];
+
     SAVE_POSITION;
 
     getNextToken(context, token);
 
-    RESTORE_POSITION;
+    if ( token[0] == 0 ) return false;
+
+    bool result = (strcmp(token, text) == 0);
+
+    if ( !result )
+    {
+        RESTORE_POSITION;
+    }
+
+    return result;
+}
+
+bool matchLiteral(Context* context, int kind)
+{
+    char token[256];
+
+    SAVE_POSITION;
+
+    getNextToken(context, token);
+
+    if ( token[0] == 0 ) return false;
+
+    bool result = (getTokenKind(token) == kind);
+
+    if ( !result )
+    {
+        RESTORE_POSITION;
+    }
+
+    return result;
 }
 
 void getNextToken(Context* context, char* token)
@@ -107,7 +137,11 @@ void getNextToken(Context* context, char* token)
         char c = getChar(context);
 
         //check for whitespace and EOF
-        if ( c == EOF ) return;
+        if ( c == EOF ) 
+        {
+            token[0] = 0;
+            return;
+        }
         if ( isspace(c) ) continue;
 
         //ignore comments

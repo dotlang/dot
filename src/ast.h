@@ -59,7 +59,11 @@ typedef enum
     CLOSE_BRACE,
     OP_COMMA,
     COMMA,
-    FN_CALL
+    FN_CALL,
+    OP_BIND,
+    OP_ARROW,
+    OP_RETURN
+
 } TokenKind;
 
 typedef struct ExpressionNode

@@ -33,7 +33,7 @@ void compileBinding(Context* context, Binding* binding)
     {
         //we have a named binding which is not returned value
         LLVMValueRef r_value = compileExpression(context, binding->expression);
-        LLVMTypeRef int_type = LLVMIntType(32);
+        LLVMTypeRef int_type = LLVMIntType(64);
         LLVMValueRef alloc_ref = LLVMBuildAlloca(context->builder, int_type, binding->lhs);
         LLVMBuildStore(context->builder, r_value, alloc_ref);
 
@@ -45,7 +45,7 @@ void declareBinding(Context* context, Binding* binding)
 {
     if ( binding->function_decl != NULL )
     {
-        LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
+        LLVMTypeRef funcType = LLVMFunctionType(LLVMInt64Type(), NULL, 0, 0);
         LLVMAddFunction(context->module, binding->lhs, funcType);
     }
 }
