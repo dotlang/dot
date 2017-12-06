@@ -62,11 +62,10 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
 
                 stack[stack_ptr++] = LLVMBuildSRem(context->builder, op2, op1, "temp");
             }
-            else if ( node->kind == OP_FUNCTION )
+            else if ( node->kind == FN_CALL )
             {
                 //for now, functions do not have input
                 LLVMValueRef args[] = {NULL};
-                printf("Looking up function %s\n", node->token);
                 LLVMValueRef fn_ref = LLVMGetNamedFunction(context->module, node->token);
                 //so the result here is a function we have to invoke
                 stack[stack_ptr++] = LLVMBuildCall(context->builder, fn_ref, args, 0, ""); 

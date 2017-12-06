@@ -14,139 +14,6 @@
 #define SAVE_POSITION long initial_position = ftell(context->input_file)
 #define RESTORE_POSITION fseek(context->input_file, initial_position, SEEK_SET)
 
-void ignoreWhitespace(Context* context)
-{
-    char c = (char)fgetc(context->input_file);
-    char temp[1024];
-
-    while ( isspace(c) || c == '#' ) 
-    {
-        if ( c == EOF ) break;
-        if ( c == '#' ) fgets(temp, 1024, context->input_file);
-
-        c = (char)fgetc(context->input_file);
-    }
-
-    ungetc(c, context->input_file);
-}
-
-//Try to read any of given characters. Return index of matching choice
-const char* matchLiterals(Context* context, const char** choices, const int choice_count)
-{
-    for(int i=0;i<choice_count;i++)
-    {
-        if ( matchLiteral(context, choices[i]) ) return choices[i];
-    }
-
-    return NULL;
-}
-
-bool matchLiteral(Context* context, const char* literal)
-{
-    ignoreWhitespace(context);
-
-    SAVE_POSITION;
-    for(size_t i=0;i<strlen(literal);i++)
-    {
-        char c = (char)fgetc(context->input_file);
-        if ( c != literal[i] ) 
-        {
-            RESTORE_POSITION;
-            return false;
-        }
-    }
-
-    return true;
-}
-
-bool matchNumber(Context* context, char* token)
-{
-    ignoreWhitespace(context);
-    SAVE_POSITION;
-
-    int token_len = 0;
-
-    char c = (char)fgetc(context->input_file);
-    if ( isdigit(c) )
-    {
-        while ( c != EOF && isdigit(c) ) 
-        {
-            token[token_len++] = c;
-            c = (char)fgetc(context->input_file);
-        }
-        ungetc(c, context->input_file);
-    }
-    else
-    {
-        RESTORE_POSITION;
-        return false;
-    }
-
-    token[token_len] = 0;
-    return true;
-}
-
-int parseIdentifier(Context* context, char* token)
-{
-    ignoreWhitespace(context);
-
-    SAVE_POSITION;
-    char c = (char)fgetc(context->input_file);
-    int token_len = 0;
-
-    if ( isalpha(c) )
-    {
-        while ( c != EOF && isalnum(c) )
-        {
-            token[token_len++] = c;
-            c = (char)fgetc(context->input_file);
-        }
-        ungetc(c, context->input_file);
-    }
-    else
-    {
-        RESTORE_POSITION;
-        return FAIL;
-    }
-
-    token[token_len] = 0;
-        
-    return OK;
-}
-
-/* int strToOp(const char* str) */
-/* { */
-/*     if ( !strcmp(str, "+") ) return OP_ADD; */
-/*     if ( !strcmp(str, "-") ) return OP_SUB; */
-/*     if ( !strcmp(str, "*") ) return OP_MUL; */
-/*     if ( !strcmp(str, "/") ) return OP_DIV; */
-/*     if ( !strcmp(str, "%") ) return OP_REM; */
-/*     if ( !strcmp(str, "%%") ) return OP_DVT; */
-
-/*     return OP_NOP; */
-/* } */
-
-/* const char* opToStr(int op) */
-/* { */
-/*     switch ( op ) */
-/*     { */
-/*         case OP_ADD: return "+"; */
-/*         case OP_SUB: return "-"; */
-/*         case OP_MUL: return "*"; */
-/*         case OP_DIV: return "/"; */
-/*         case OP_REM: return "%"; */
-/*         case OP_DVT: return "%%"; */
-/*     } */
-
-    /* return "N/A"; */
-/* } */
-
-bool is_delimiter(char c)
-{
-    if ( c == EOF ) return true;
-    return strchr("\r\n+-=.,[]()", c) != NULL;
-}
-
 char getChar(Context* context)
 {
     char c= (char)fgetc(context->input_file);
@@ -157,13 +24,6 @@ char getChar(Context* context)
 void undoChar(Context* context, char c)
 {
     ungetc(c, context->input_file);
-}
-
-//TODO: remove this and instead add peekToken
-void undoToken(Context* context, char* token)
-{
-    for(int i=strlen(token)-1;i>=0;i--)
-        undoChar(context, token[i]);
 }
 
 bool newLineAhead(Context* context)
@@ -190,27 +50,64 @@ bool newLineAhead(Context* context)
     }
 }
 
-//TODO: remove int return. we don't need it
+TokenKind getTokenKind(char* token)
+{
+    if ( !strcmp(token, "(") ) return OPEN_PAREN;
+    if ( !strcmp(token, ")") ) return CLOSE_PAREN;
+    if ( !strcmp(token, "+") ) return OP_ADD;
+    if ( !strcmp(token, "-") ) return OP_SUB;
+    if ( !strcmp(token, "*") ) return OP_MUL;
+    if ( !strcmp(token, "/") ) return OP_DIV;
+    if ( !strcmp(token, "%") ) return OP_REM;
+    if ( !strcmp(token, "%%") ) return OP_DVT;
+    if ( !strcmp(token, "{") ) return OPEN_BRACE;
+    if ( !strcmp(token, "}") ) return CLOSE_BRACE;
+    if ( !strcmp(token, ",") ) return COMMA;
+
+    if ( isdigit(token[0]) ) return INT_LITERAL;
+
+    return IDENTIFIER;
+}
+
+int getOperatorPrecedence(TokenKind kind)
+{
+    switch ( kind )
+    {
+        case OP_ADD: return 2;
+        case OP_SUB: return 2;
+        case OP_MUL: return 3;
+        case OP_DIV: return 3;
+        case OP_REM: return 3;
+        case OP_DVT: return 3;
+        default: abort();
+    }
+
+    abort();
+}
+            
+bool isLeftAssociative(TokenKind kind)
+{
+    return true;
+}
+
 //TODO: make these efficient by caching next token in peek token instead of changing file ptr
-int peekNextToken(Context* context, char* token)
+void peekNextToken(Context* context, char* token)
 {
     SAVE_POSITION;
 
-    int result = getNextToken(context, token);
+    getNextToken(context, token);
 
     RESTORE_POSITION;
-
-    return result;
 }
 
-int getNextToken(Context* context, char* token)
+void getNextToken(Context* context, char* token)
 {
     while ( 1 ) 
     {
         char c = getChar(context);
 
         //check for whitespace and EOF
-        if ( c == EOF ) return 0;
+        if ( c == EOF ) return;
         if ( isspace(c) ) continue;
 
         //ignore comments
@@ -229,12 +126,12 @@ int getNextToken(Context* context, char* token)
             {
                 token[0] = token[1] = '%';
                 token[2]=0;
-                return 2;
+                return;
             }
             undoChar(context, c);
             token[0] = '%';
             token[1] = 0;
-            return 1;
+            return;
         }
 
         if ( c == ':' )
@@ -245,12 +142,12 @@ int getNextToken(Context* context, char* token)
                 token[0] = ':';
                 token[1] = c;
                 token[2] = 0;
-                return 2;
+                return;
             }
             undoChar(context, c);
             token[0] = ':';
             token[1] = 0;
-            return 1;
+            return;
         }
 
         if ( c == '-' )
@@ -261,12 +158,12 @@ int getNextToken(Context* context, char* token)
                 token[0] = '-';
                 token[1] = '>';
                 token[2] = 0;
-                return 2;
+                return;
             }
             undoChar(context, c);
             token[0] = '-';
             token[1] = 0;
-            return 1;
+            return;
         }
         
         //check for single character tokens
@@ -274,7 +171,7 @@ int getNextToken(Context* context, char* token)
         {
             token[0] = c;
             token[1] = 0;
-            return 1;
+            return;
         }
 
         //check for number literals
@@ -288,7 +185,7 @@ int getNextToken(Context* context, char* token)
             }
             undoChar(context, c);
             token[len] = 0;
-            return len;
+            return;
         }
 
         if ( isalpha(c) )
@@ -302,7 +199,7 @@ int getNextToken(Context* context, char* token)
             undoChar(context, c);
             token[len] = 0;
 
-            return len;
+            return;
         }
     }
 }

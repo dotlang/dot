@@ -3,17 +3,11 @@
 
 #include "ast.h"
 
-const char* matchLiterals(Context* context, const char** choices, const int);
-bool matchLiteral(Context* context, const char* literal);
-bool matchNumber(Context* context, char* token);
-int parseIdentifier(Context* context, char* token);
-int strToOp(const char* str);
-const char* opToStr(int op);
-
-int getNextToken(Context* context, char* token);
-//TODO: remove this?
-void undoToken(Context* context, char* token);
+void getNextToken(Context* context, char* token);
 bool newLineAhead(Context* context);
-int peekNextToken(Context* context, char* token);
+void peekNextToken(Context* context, char* token);
+TokenKind getTokenKind(char* token);
+int getOperatorPrecedence(TokenKind kind);
+bool isLeftAssociative(TokenKind kind);
 
 #endif

@@ -33,7 +33,7 @@ void checkDebugMode(Context* context)
     }
 }
 
-int openInputFile(Context* context, char* arg)
+bool openInputFile(Context* context, char* arg)
 {
     context->input_file_path = arg;
     debugLog(context, "compiling %s...", context->input_file_path);
@@ -43,10 +43,10 @@ int openInputFile(Context* context, char* arg)
     if ( context->input_file == NULL )
     {
         printf("Could not open input file: %s\n", context->input_file_path);
-        return FAIL;
+        return false;
     }
 
-    return OK;
+    return true;
 }
 
 void prepareOutputLocation(Context* context)
@@ -102,8 +102,8 @@ int main(int argc, char** argv)
 
     checkDebugMode(context);
     
-    int error_code = openInputFile(context, argv[1]);
-    if ( error_code == FAIL ) return 1;
+    bool success = openInputFile(context, argv[1]);
+    if ( success == false ) return 1;
 
     Module* module = parseModule(context);
     fclose(context->input_file);

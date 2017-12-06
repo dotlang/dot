@@ -8,40 +8,16 @@
 #include "llvm-c/Core.h"
 #include "hash.h"
 
-#define OK   1
-#define FAIL -1
-
 #define ALLOC(V, T)  T* V = (T*)calloc(1, sizeof(T))
-#define PARSE(R, F) R = F(context); if ( R == NULL ) return NULL
-#define PARSE_ELSE(R, F) R = F(context); if ( R == NULL )
+#define ALLOC_NODE(V, TOKEN, KIND )\
+                ALLOC(V, ExpressionNode);\
+                strcpy(V->token, TOKEN);\
+                V->kind = kind
+/* #define PARSE(R, F) R = F(context); if ( R == NULL ) return NULL */
+/* #define PARSE_ELSE(R, F) R = F(context); if ( R == NULL ) */
 
-#define EXPECT(x)     if ( matchLiteral(context, x) == false ) return NULL
-#define IF_MATCH(x)   if ( matchLiteral(context, x) == true )
-
-/* #define OP_NOP 0 */
-/* #define OP_AND 1 */
-/* #define OP_OR  2 */
-/* #define OP_XOR 3 */
-/* #define OP_EQ  4 */
-/* #define OP_NE  5 */
-/* #define OP_GT  6 */
-/* #define OP_LT  7 */
-/* #define OP_GE  8 */
-/* #define OP_LE  9 */
-/* #define OP_SHR 10 */
-/* #define OP_SHL 11 */
-/* #define OP_POW 12 */
-/* #define OP_ADD 13 */
-/* #define OP_SUB 14 */
-/* #define OP_MUL 15 */
-/* #define OP_DIV 16 */
-/* #define OP_REM 17 */
-/* #define OP_DVT 18  //divisibility test */
-/* #define OP_NOT 19 */
-/* #define OP_NEG 20 */
-/* #define OP_DOT 21 */
-/* #define OP_BRC 22  //braces a[1] */
-/* #define OP_CAL 23  //function call */
+/* #define EXPECT(x)     if ( matchLiteral(context, x) == false ) return NULL */
+/* #define IF_MATCH(x)   if ( matchLiteral(context, x) == true ) */
 
 typedef struct
 {
@@ -60,20 +36,50 @@ typedef struct
     /* hashtable_t* module_value_bindings; */
     //List of bindings defined inside current function
     hashtable_t* function_bindings;
+    char token_cache[256];
 
 } Context;
 
-
 typedef struct Binding Binding;
-typedef struct Expression Expression;
-typedef struct ExpressionNode ExpressionNode;
-typedef struct BindingList Module;
-typedef struct BindingList FunctionDecl;
 
-typedef struct BindingList
+typedef enum
+{
+    NA,
+    INT_LITERAL,
+    IDENTIFIER,
+    OPEN_PAREN,
+    CLOSE_PAREN,
+    OP_ADD,
+    OP_SUB,
+    OP_MUL,
+    OP_DIV,
+    OP_REM,
+    OP_DVT,
+    OPEN_BRACE,
+    CLOSE_BRACE,
+    OP_COMMA,
+    COMMA,
+    FN_CALL
+} TokenKind;
+
+typedef struct ExpressionNode
+{
+    char token[32];
+    TokenKind kind;
+    int arg_count;
+
+    struct ExpressionNode* next;
+} ExpressionNode;
+
+typedef struct Expression
+{
+    ExpressionNode *first_node, *last_node;
+} Expression;
+
+typedef struct 
 {
     Binding* first_binding, *last_binding;
-} BindingList;
+} Module, FunctionDecl;
 
 typedef struct Binding
 {
@@ -89,42 +95,5 @@ typedef struct Binding
     struct Binding* next;
 } Binding;
 
-typedef struct Expression
-{
-    ExpressionNode *first_node, *last_node;
-} Expression;
-
-//TODO: rename left/right to open/cose
-typedef enum
-{
-    NA,
-    INT_LITERAL,
-    IDENTIFIER,
-    LEFT_PAREN,
-    RIGHT_PAREN,
-    OP_ADD,
-    OP_SUB,
-    OP_MUL,
-    OP_DIV,
-    OP_REM,
-    OP_DVT,
-    LEFT_BRACE,
-    RIGHT_BRACE,
-    OP_COMMA,
-    COMMA,
-    //TODO: rename to fn_call
-    OP_FUNCTION
-} TokenKind;
-
-typedef struct ExpressionNode
-{
-    char token[32];
-    TokenKind kind;
-    //TODO: remove this field
-    int  prec;
-    int arg_count;
-
-    struct ExpressionNode* next;
-} ExpressionNode;
 
 #endif
