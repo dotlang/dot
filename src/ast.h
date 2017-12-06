@@ -109,7 +109,11 @@ typedef enum
     OP_REM,
     OP_DVT,
     LEFT_BRACE,
-    RIGHT_BRACE
+    RIGHT_BRACE,
+    OP_COMMA,
+    COMMA,
+    //TODO: rename to fn_call
+    OP_FUNCTION
 } TokenKind;
 
 typedef struct ExpressionNode
@@ -118,6 +122,7 @@ typedef struct ExpressionNode
     TokenKind kind;
     //TODO: remove this field
     int  prec;
+    int arg_count;
 
     struct ExpressionNode* next;
 } ExpressionNode;

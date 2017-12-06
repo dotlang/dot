@@ -191,6 +191,7 @@ bool newLineAhead(Context* context)
 }
 
 //TODO: remove int return. we don't need it
+//TODO: make these efficient by caching next token in peek token instead of changing file ptr
 int peekNextToken(Context* context, char* token)
 {
     SAVE_POSITION;

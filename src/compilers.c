@@ -22,8 +22,8 @@ void compileBinding(Context* context, Binding* binding)
     }
     else if ( binding->function_decl != NULL )
     {
-        LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
-        LLVMValueRef mainfunc = LLVMAddFunction(context->module, binding->lhs, funcType);
+        LLVMValueRef mainfunc = LLVMGetNamedFunction(context->module, binding->lhs);
+
         LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry");
         LLVMPositionBuilderAtEnd(context->builder, entry);
 
@@ -41,6 +41,15 @@ void compileBinding(Context* context, Binding* binding)
     }
 }
 
+void declareBinding(Context* context, Binding* binding)
+{
+    if ( binding->function_decl != NULL )
+    {
+        LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
+        LLVMAddFunction(context->module, binding->lhs, funcType);
+    }
+}
+
 void compileModule(Context* context, Module* m)
 {
     context->module = LLVMModuleCreateWithName("test");
@@ -49,7 +58,13 @@ void compileModule(Context* context, Module* m)
     context->builder = LLVMCreateBuilder();
 
     Binding* binding = m->first_binding;
+    while ( binding != NULL )
+    {
+        declareBinding(context, binding);
+        binding = binding->next;
+    }
 
+    binding = m->first_binding;
     while ( binding != NULL )
     {
         //for module level bindings we dont need a storage as we can lookup functions using LLVM

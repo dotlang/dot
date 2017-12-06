@@ -26,21 +26,56 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
 		}
 		else
 		{
-			LLVMValueRef op1 = stack[--stack_ptr];
-            LLVMValueRef op2 = stack[--stack_ptr];
 
             if ( node->kind == OP_ADD )
+            {
+                LLVMValueRef op1 = stack[--stack_ptr];
+                LLVMValueRef op2 = stack[--stack_ptr];
+
                 stack[stack_ptr++] = LLVMBuildAdd(context->builder, op1, op2, "temp");
+            }
             else if ( node->kind == OP_SUB )
+            {
+                LLVMValueRef op1 = stack[--stack_ptr];
+                LLVMValueRef op2 = stack[--stack_ptr];
+
                 stack[stack_ptr++] = LLVMBuildSub(context->builder, op2, op1, "temp");
+            }
             else if ( node->kind == OP_MUL )
+            {
+                LLVMValueRef op1 = stack[--stack_ptr];
+                LLVMValueRef op2 = stack[--stack_ptr];
+
                 stack[stack_ptr++] = LLVMBuildMul(context->builder, op1, op2, "temp");
+            }
             else if ( node->kind == OP_DIV )
+            {
+                LLVMValueRef op1 = stack[--stack_ptr];
+                LLVMValueRef op2 = stack[--stack_ptr];
+
                 stack[stack_ptr++] = LLVMBuildSDiv(context->builder, op2, op1, "temp");
+            }
             else if ( node->kind == OP_REM )
+            {
+                LLVMValueRef op1 = stack[--stack_ptr];
+                LLVMValueRef op2 = stack[--stack_ptr];
+
                 stack[stack_ptr++] = LLVMBuildSRem(context->builder, op2, op1, "temp");
+            }
+            else if ( node->kind == OP_FUNCTION )
+            {
+                //for now, functions do not have input
+                LLVMValueRef args[] = {NULL};
+                printf("Looking up function %s\n", node->token);
+                LLVMValueRef fn_ref = LLVMGetNamedFunction(context->module, node->token);
+                //so the result here is a function we have to invoke
+                stack[stack_ptr++] = LLVMBuildCall(context->builder, fn_ref, args, 0, ""); 
+            }
             else if ( node->kind == OP_DVT )
             {
+                LLVMValueRef op1 = stack[--stack_ptr];
+                LLVMValueRef op2 = stack[--stack_ptr];
+
                 LLVMTypeRef intType = LLVMIntType(32);
                 LLVMValueRef one = LLVMConstInt(intType, 1, true);
                 LLVMValueRef zero = LLVMConstInt(intType, 0, true);

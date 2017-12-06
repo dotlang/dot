@@ -197,6 +197,7 @@ Binding* parseBinding(Context*);
 /*     return eq_expression; */
 /* } */
 
+//TODO: move to basic parsers
 TokenKind getTokenKind(char* token)
 {
     if ( !strcmp(token, "(") ) return LEFT_PAREN;
@@ -209,6 +210,7 @@ TokenKind getTokenKind(char* token)
     if ( !strcmp(token, "%%") ) return OP_DVT;
     if ( !strcmp(token, "{") ) return LEFT_BRACE;
     if ( !strcmp(token, "}") ) return RIGHT_BRACE;
+    if ( !strcmp(token, ",") ) return COMMA;
 
     if ( isdigit(token[0]) ) return INT_LITERAL;
 
@@ -236,17 +238,28 @@ bool isLeftAssociative(TokenKind kind)
     return true;
 }
 
+// If you see ( after identifier, push `identifier(` to the stack, this is a fn call
+// with each comma, increase counter for the latest function call in stack
+//when you see `)` pop everything until you see `(`. If it is with fn, then pop that and add to output.
+//do not push comma to any place
+//So
+//f(g(a,b),c,d) will become:
+//a b g2 c d f3
+//maybe we should keep track of fn-calls in the op-stack separately to make increasing op-count for them more efficient
 Expression* parseExpression(Context* context)
 {
     //TODO: there are a lot of checks that can be done here to make sure exp has correct syntax
     //TODO: remove lpar and rpar from token kinds
+    //TODO: do we need below alloc?
     ALLOC(expression, Expression);
 
     ExpressionNode* node = NULL;
     ExpressionNode* stack[100];
+    ExpressionNode* fn_stack[100];
     TokenKind kind = NA;
     char token[32];
     int stack_ptr = 0;
+    int fn_stack_ptr = 0;
 
     while ( 1 )
     {
@@ -266,7 +279,7 @@ Expression* parseExpression(Context* context)
 
         kind = getTokenKind(token);
 
-        if ( kind == INT_LITERAL || kind == IDENTIFIER )
+        if ( kind == INT_LITERAL )
         {
             //if token is number or identifier, just move it to output
             ALLOC(temp_node, ExpressionNode);
@@ -276,8 +289,54 @@ Expression* parseExpression(Context* context)
             if ( node == NULL ) { node = expression->first_node = temp_node; }
             else { node->next = temp_node; node = node->next; } 
         }
+        else if ( kind == IDENTIFIER )
+        {
+            ALLOC(temp_node, ExpressionNode);
+            strcpy(temp_node->token, token);
+            temp_node->kind = kind;
+
+            peekNextToken(context, token);
+            if ( !strcmp(token, "(") )
+            {
+                //this is a function call
+                getNextToken(context, token);
+
+                //add it to stack
+                temp_node->kind = OP_FUNCTION;
+
+                peekNextToken(context, token);
+                if ( !strcmp(token, ")" ) )
+                {
+                    getNextToken(context, token);
+                    //this is a function call without arg
+                    //do not add it to the stack but add to the output
+                    printf("Adding %s(0) to output\n", temp_node->token);
+                    if ( node == NULL ) { node = expression->first_node = temp_node; }
+                    else { node->next = temp_node; node = node->next; } 
+                }
+                else
+                {
+                    stack[stack_ptr] = temp_node;
+                    stack_ptr++;
+                    fn_stack[fn_stack_ptr] = temp_node;
+                    fn_stack_ptr++;
+                }
+            }
+            else
+            {
+                //this is a binding name - add to output
+                if ( node == NULL ) { node = expression->first_node = temp_node; }
+                else { node->next = temp_node; node = node->next; } 
+            }
+        }
+        else if ( kind == COMMA )
+        {
+            printf("Addng new arg to fn %s", fn_stack[fn_stack_ptr-1]->token);
+            fn_stack[fn_stack_ptr-1]->arg_count++;
+        }
         else if ( !strcmp(token, "(") )
         {
+            //use kind for all comparisons, not token
             //if token is "(" push it into stack
             ALLOC(lpar, ExpressionNode);
             strcpy(lpar->token, "(");
@@ -289,7 +348,7 @@ Expression* parseExpression(Context* context)
         else if ( !strcmp(token, ")") )
         {
             //if token is ")" pop everything except "(" from stack and push to output, then pop "("
-            while ( stack_ptr > 0 && stack[stack_ptr-1]->kind != LEFT_PAREN )
+            while ( stack_ptr > 0 && stack[stack_ptr-1]->kind != LEFT_PAREN && stack[stack_ptr-1]->kind != OP_FUNCTION )
             {
                 stack_ptr--;
                 node->next = stack[stack_ptr];
@@ -297,6 +356,16 @@ Expression* parseExpression(Context* context)
             }
 
             stack_ptr--;
+            if ( stack[stack_ptr]->kind == OP_FUNCTION )
+            {
+                printf("Adding %s(argc=%d) to output\n", stack[stack_ptr]->token, stack[stack_ptr]->arg_count);
+                node->next = stack[stack_ptr];
+                //we do not count the last argument, as we inc arg_count with each comma
+                node->next->arg_count++;
+                node = node->next;
+
+                fn_stack_ptr--;
+            }
         }
         else
         {

@@ -57,7 +57,14 @@ void dumpExpression(Context* context, Expression* expression)
     ExpressionNode* node = expression->first_node;
     while ( node != NULL ) 
     {
-        debugLogNoNewLine(context, "%s ", node->token);
+        if ( node->kind == OP_FUNCTION )
+        {
+            debugLogNoNewLine(context, "%s(%d) ", node->token, node->arg_count);
+        }
+        else
+        {
+            debugLogNoNewLine(context, "%s ", node->token);
+        }
         node = node->next;
     }
     debugLog(context, "\n");
