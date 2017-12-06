@@ -51,6 +51,7 @@ TokenKind getTokenKind(char* token)
 {
     int len = strlen(token);
     if ( len == 1 && token[0] == '(') return OPEN_PAREN;
+    if ( len == 1 && token[0] == ':') return OP_COLON;;
     if ( len == 1 && token[0] == ')') return CLOSE_PAREN;
     if ( len == 1 && token[0] == '+') return OP_ADD;
     if ( len == 1 && token[0] == '-') return OP_SUB;

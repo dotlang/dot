@@ -46,11 +46,16 @@ typedef enum
 {
     NA,
     INT_LITERAL,
+    FLOAT_LITERAL,
+    BOOL_LITERAL,
+    CHAR_LITERAL,
     IDENTIFIER,
     OPEN_PAREN,
     CLOSE_PAREN,
     OP_ADD,
     OP_SUB,
+    OP_NEG, //unary -
+    OP_POS, //unary +
     OP_MUL,
     OP_DIV,
     OP_REM,
@@ -62,7 +67,8 @@ typedef enum
     FN_CALL,
     OP_BIND,
     OP_ARROW,
-    OP_RETURN
+    OP_RETURN,
+    OP_COLON
 
 } TokenKind;
 
@@ -95,6 +101,9 @@ typedef struct Binding
     //A binding can be either an expression or a function declaration
     FunctionDecl* function_decl;
     Expression* expression;
+
+    //declared type
+    char decl_type[64];
 
     struct Binding* next;
 } Binding;

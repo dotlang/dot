@@ -123,6 +123,9 @@ Expression* parseExpression(Context* context)
         }
         else //if we see a normal operator
         {
+            //TODO: if we have op_plus or op_minus and it's the first item, after another binary op or after `(` then it is unary
+            //convert it to op_neg and op_pos
+            //handle these in algorithm, precedemce and associativity
             int prec = getOperatorPrecedence(kind);
 
             //pop every operator in the op_stack which has lowe precedence or has same precedence and it left associative
@@ -238,6 +241,11 @@ Binding* parseBinding(Context* context)
     }
 
     debugLog(context, "Parsing binding: %s", binding->lhs);
+
+    if ( matchLiteral(context, OP_COLON) )
+    {
+        getNextToken(context, binding->decl_type);
+    }
 
     if ( !matchLiteral(context, OP_BIND) ) return NULL;
 

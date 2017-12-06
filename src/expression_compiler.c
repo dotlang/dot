@@ -4,6 +4,9 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
 {
     //go through expression nodes and parse them as postfix notation
     LLVMTypeRef intType = LLVMIntType(64);
+    LLVMValueRef one = LLVMConstInt(intType, 1, true);
+    LLVMValueRef zero = LLVMConstInt(intType, 0, true);
+
     Stack* stack = new_stack();
 
     ExpressionNode* node = expression->first_node;
@@ -70,12 +73,9 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
             }
             else if ( node->kind == OP_DVT )
             {
+                //this operator only applies to integers
                 LLVMValueRef op1 = (LLVMValueRef)pop(stack);
                 LLVMValueRef op2 = (LLVMValueRef)pop(stack);
-
-                LLVMTypeRef intType = LLVMIntType(64);
-                LLVMValueRef one = LLVMConstInt(intType, 1, true);
-                LLVMValueRef zero = LLVMConstInt(intType, 0, true);
 
                 LLVMValueRef rem = LLVMBuildSRem(context->builder, op2, op1, "temp");
                 LLVMValueRef is_divisible =  LLVMBuildICmp(context->builder, LLVMIntEQ, rem, zero, "is_divisible");
