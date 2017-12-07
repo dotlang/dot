@@ -103,9 +103,22 @@ typedef struct
     Binding* first_binding, *last_binding;
 } Module;
 
+typedef struct ArgDef
+{
+    char name[32];
+    //TODO: can we replace this with llvmtyperef?
+    ExpressionType type;
+
+    struct ArgDef* next;
+} ArgDef;
+
 typedef struct 
 {
     Binding* first_binding, *last_binding;
+
+    //TODO: can we remove last* from all lists?
+    ArgDef *first_arg, *last_arg;
+    int arg_count;
     
     //declared output type
     ExpressionType output_type;

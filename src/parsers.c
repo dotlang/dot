@@ -193,9 +193,36 @@ FunctionDecl* parseFunctionDecl(Context* context)
 {
     ALLOC(function_decl, FunctionDecl);
 
-    //TODO: replace this method with matchToken which accepts token type instead of string
     if ( !matchLiteral(context, OPEN_PAREN) ) return NULL;
-    if ( !matchLiteral(context, CLOSE_PAREN) ) return NULL;
+    if ( !matchLiteral(context, CLOSE_PAREN) ) 
+    {
+        ArgDef* arg_def = NULL;
+        //function decl contains some inputs
+        //in the form of name:type
+        while ( !matchLiteral(context, CLOSE_PAREN) )
+        {
+            ALLOC(temp_arg, ArgDef);
+
+            getNextToken(context, temp_arg->name);
+            if ( !matchLiteral(context, OP_COLON) ) return NULL;
+            temp_arg->type = readTypeDecl(context);
+
+            if ( arg_def == NULL )
+            {
+                arg_def = function_decl->first_arg = temp_arg;
+                function_decl->arg_count++;
+            }
+            else
+            {
+                arg_def->next = temp_arg;
+                arg_def = arg_def->next;
+                function_decl->arg_count++;
+            }
+        }
+
+        function_decl->last_arg = arg_def;
+    }
+
     if ( !matchLiteral(context, OP_ARROW) ) return NULL;
 
     ExpressionType output_type;

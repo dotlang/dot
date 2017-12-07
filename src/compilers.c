@@ -2,8 +2,37 @@
 
 void compileBinding(Context* context, Binding* binding);
 
-void compileFunctionDecl(Context* context, FunctionDecl* function_decl)
+LLVMTypeRef expressionTypeToLLVMType(ExpressionType type)
 {
+    switch ( type )
+    {
+        case INT: return LLVMInt64Type();
+        case CHAR: return LLVMInt8Type();
+        case BOOL: return LLVMInt1Type();
+        case FLOAT: return LLVMDoubleType();
+        default:
+            abort();
+    }
+}
+
+void compileFunctionDecl(Context* context, LLVMValueRef function, FunctionDecl* function_decl)
+{
+    ArgDef* arg = function_decl->first_arg;
+
+    //first we need to allocate function inputs
+    for(int i=0;i<function_decl->arg_count;i++)
+    {
+        LLVMValueRef arg_ref = LLVMGetParam(function, i);
+        printf("adding %s arg as %d\n", arg->name, (int)arg_ref);
+
+        LLVMTypeRef arg_type = expressionTypeToLLVMType(arg->type);
+        LLVMValueRef alloc_ref = LLVMBuildAlloca(context->builder, arg_type, arg->name);
+        LLVMBuildStore(context->builder, arg_ref, alloc_ref);
+        ht_set(context->function_bindings, arg->name, alloc_ref);
+
+        arg = arg->next;
+    }
+
     Binding* binding = function_decl->first_binding;
     while ( binding != NULL )
     {
@@ -15,16 +44,25 @@ void compileFunctionDecl(Context* context, FunctionDecl* function_decl)
 
 LLVMTypeRef getFunctionType(FunctionDecl* function_decl)
 {
+    ALLOC_ARRAY(args, function_decl->arg_count, LLVMTypeRef);
+
+    ArgDef* arg = function_decl->first_arg;
+    for(int i=0;i<function_decl->arg_count;i++)
+    {
+        args[i] = expressionTypeToLLVMType(arg->type);
+        arg = arg->next;
+    }
+
     switch ( function_decl->output_type )
     {
         case FLOAT:
-            return LLVMFunctionType(LLVMDoubleType(), NULL, 0, 0);
+            return LLVMFunctionType(LLVMDoubleType(), args, function_decl->arg_count, 0);
         case CHAR:
-            return LLVMFunctionType(LLVMInt8Type(), NULL, 0, 0);
+            return LLVMFunctionType(LLVMInt8Type(), args, function_decl->arg_count, 0);
         case BOOL:
-            return LLVMFunctionType(LLVMInt1Type(), NULL, 0, 0);
+            return LLVMFunctionType(LLVMInt1Type(), args, function_decl->arg_count, 0);
         default:
-            return LLVMFunctionType(LLVMInt64Type(), NULL, 0, 0);
+            return LLVMFunctionType(LLVMInt64Type(), args, function_decl->arg_count, 0);
     }
 }
 
@@ -52,7 +90,7 @@ void compileBinding(Context* context, Binding* binding)
         LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry");
         LLVMPositionBuilderAtEnd(context->builder, entry);
 
-        compileFunctionDecl(context, binding->function_decl);
+        compileFunctionDecl(context, mainfunc, binding->function_decl);
     }
     else
     {
