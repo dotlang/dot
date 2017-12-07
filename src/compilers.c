@@ -20,7 +20,9 @@ LLVMTypeRef getFunctionType(FunctionDecl* function_decl)
 
 LLVMTypeRef getBindingType(Binding* binding)
 {
-    return LLVMIntType(64);
+    if ( !strcmp(binding->decl_type, "bool") ) return LLVMInt1Type();
+
+    return LLVMInt64Type();
 }
 
 void compileBinding(Context* context, Binding* binding)
@@ -60,6 +62,30 @@ void declareBinding(Context* context, Binding* binding)
     }
 }
 
+void addPredefinedFunctions(Context* context)
+{
+    LLVMTypeRef input_types[] = { LLVMInt1Type() };
+
+    LLVMTypeRef func_type = LLVMFunctionType(LLVMInt64Type(), input_types, 1, 0);
+    LLVMValueRef main_func = LLVMAddFunction(context->module, "int", func_type);
+
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(main_func, "entry");
+    LLVMPositionBuilderAtEnd(context->builder, entry);
+    LLVMValueRef arg = LLVMGetFirstParam(main_func);
+    //LLVMValueRef r_value = LLVMBuildIntCast(context->builder, arg, LLVMInt64Type(), "cast");
+    //
+    LLVMTypeRef int1Type = LLVMInt1Type();
+    LLVMValueRef true_val = LLVMConstInt(int1Type, 1, true);
+
+    LLVMTypeRef intType = LLVMInt64Type();
+    LLVMValueRef one = LLVMConstInt(intType, 1, true);
+    LLVMValueRef zero = LLVMConstInt(intType, 0, true);
+
+    LLVMValueRef is_true =  LLVMBuildICmp(context->builder, LLVMIntEQ, arg, true_val, "is_true");
+    LLVMValueRef r_value = LLVMBuildSelect(context->builder, is_true, one, zero, "bool_to_int");
+    LLVMBuildRet(context->builder, r_value);
+}
+
 void compileModule(Context* context, Module* m)
 {
     context->module = LLVMModuleCreateWithName("test");
@@ -73,6 +99,8 @@ void compileModule(Context* context, Module* m)
         declareBinding(context, binding);
         binding = binding->next;
     }
+
+    addPredefinedFunctions(context);
 
     binding = m->first_binding;
     while ( binding != NULL )

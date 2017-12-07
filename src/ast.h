@@ -9,6 +9,7 @@
 #include "hash.h"
 
 #define ALLOC(V, T)  T* V = (T*)calloc(1, sizeof(T))
+#define ALLOC_ARRAY(V, C, T)  T* V = (T*)calloc(C, sizeof(T))
 #define ALLOC_NODE(V, TOKEN, KIND )\
                 ALLOC(V, ExpressionNode);\
                 strcpy(V->token, TOKEN);\
@@ -70,13 +71,13 @@ typedef enum
     OP_ARROW,
     OP_RETURN,
     OP_COLON
-
 } TokenKind;
 
 typedef struct ExpressionNode
 {
     char token[32];
     TokenKind kind;
+    //only for function call
     int arg_count;
 
     struct ExpressionNode* next;
@@ -103,7 +104,7 @@ typedef struct Binding
     FunctionDecl* function_decl;
     Expression* expression;
 
-    //declared type
+    //declared type `x:int := 10`
     char decl_type[64];
 
     struct Binding* next;

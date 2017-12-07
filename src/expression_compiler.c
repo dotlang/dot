@@ -7,7 +7,8 @@
 LLVMValueRef compileExpression(Context* context, Expression* expression)
 {
     //go through expression nodes and parse them as postfix notation
-    LLVMTypeRef intType = LLVMIntType(64);
+    LLVMTypeRef intType = LLVMInt64Type();
+    LLVMTypeRef int1Type = LLVMInt1Type();
     LLVMValueRef one = LLVMConstInt(intType, 1, true);
     LLVMValueRef zero = LLVMConstInt(intType, 0, true);
 
@@ -26,6 +27,17 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
         {
             DO_PUSH(LLVMConstInt(intType, atoi(node->token), true));
         }
+        else if ( node->kind == BOOL_LITERAL )
+        {
+            if ( !strcmp(node->token, "true") )
+            {
+                DO_PUSH(LLVMConstInt(int1Type, 1, true));
+            }
+            else
+            {
+                DO_PUSH(LLVMConstInt(int1Type, 0, true));
+            }
+        }
         else if ( node->kind == IDENTIFIER )
         {
 			LLVMValueRef ptr = (LLVMValueRef)ht_get(context->function_bindings, node->token);
@@ -36,8 +48,7 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
             }
             else
             {
-                printf("Cannot find identifier: %s\n", node->token);
-                abort();
+                errorLog("Cannot find identifier: %s\n", node->token);
             }
 		}
 		else
@@ -84,11 +95,23 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
             }
             else if ( node->kind == FN_CALL )
             {
+                int arg_count = node->arg_count;
                 //for now, functions do not have input
-                LLVMValueRef args[] = {NULL};
+                ALLOC_ARRAY(args, arg_count, LLVMValueRef);
                 LLVMValueRef fn_ref = LLVMGetNamedFunction(context->module, node->token);
+                if ( fn_ref == NULL )
+                {
+                    errorLog("Cannot find function: %s\n", node->token);
+                }
+
+                for(int i=0;i<arg_count;i++)
+                {
+                    DO_POP(temp);
+                    args[i] = temp;
+                }
+
                 //so the result here is a function we have to invoke
-                DO_PUSH(LLVMBuildCall(context->builder, fn_ref, args, 0, ""));
+                DO_PUSH(LLVMBuildCall(context->builder, fn_ref, args, arg_count, ""));
             }
             else if ( node->kind == OP_DVT )
             {

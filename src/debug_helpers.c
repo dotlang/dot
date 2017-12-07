@@ -59,7 +59,7 @@ void dumpExpression(Context* context, Expression* expression)
     {
         if ( node->kind == FN_CALL )
         {
-            debugLogNoNewLine(context, "%s(%d) ", node->token, node->arg_count);
+            debugLogNoNewLine(context, "%s-%d ", node->token, node->arg_count);
         }
         else
         {
@@ -68,5 +68,26 @@ void dumpExpression(Context* context, Expression* expression)
         node = node->next;
     }
     debugLog(context, "\n");
+}
+
+
+void errorLog(const char* format, ...)
+{
+	char result[1024];
+
+    /* Declare a va_list type variable */
+    va_list myargs;
+
+    /* Initialise the va_list variable with the ... after fmt */
+    va_start(myargs, format);
+
+    /* Forward the '...' to vprintf */
+    vsprintf(result, format, myargs);
+
+    /* Clean up the va_list */
+    va_end(myargs);
+
+	printf("%s\n", result);
+	abort();
 }
 

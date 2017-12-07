@@ -93,6 +93,8 @@ TokenKind getTokenKind(char* token, TokenKind prev_kind)
     if ( len == 2 && token[0] == '<' && token[1] == '<' )  return OP_SHL;
     if ( isdigit(token[0]) ) return INT_LITERAL;
 
+    if ( !strcmp(token, "true") || !strcmp(token, "false") ) return BOOL_LITERAL;
+
     return IDENTIFIER;
 }
 
@@ -113,7 +115,7 @@ int getOperatorPrecedence(TokenKind kind)
         case OP_NEG: return 13;
         case OP_SHR: return 10;
         case OP_SHL: return 10;
-        default: { printf("ABORT! for %d", kind); abort(); }
+        default: { errorLog("Aborting! Invalid operator: %d\n", kind); abort(); }
     }
 }
             

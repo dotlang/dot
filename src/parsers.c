@@ -18,6 +18,7 @@ Binding* parseBinding(Context*);
 //f(g(a,b),c,d) will become:
 //a b g2 c d f3
 //maybe we should keep track of fn-calls in the op-stack separately to make increasing op-count for them more efficient
+//TODO: can we simplify this?
 Expression* parseExpression(Context* context)
 {
     //TODO: there are a lot of checks that can be done here to make sure exp has correct syntax
@@ -37,6 +38,7 @@ Expression* parseExpression(Context* context)
         {
             if ( kind == IDENTIFIER ||
                  kind == INT_LITERAL ||
+                 kind == BOOL_LITERAL ||
                  kind == CLOSE_PAREN )
             {
                 break;
@@ -51,6 +53,13 @@ Expression* parseExpression(Context* context)
         if ( kind == INT_LITERAL )
         {
             //if token is number or identifier, just move it to output
+            ALLOC_NODE(temp_node, token, kind);
+
+            if ( node == NULL ) { node = expression->first_node = temp_node; }
+            else { node->next = temp_node; node = node->next; } 
+        }
+        else if ( kind == BOOL_LITERAL )
+        {
             ALLOC_NODE(temp_node, token, kind);
 
             if ( node == NULL ) { node = expression->first_node = temp_node; }
@@ -236,8 +245,7 @@ Binding* parseBinding(Context* context)
 
     if ( getTokenKind(binding->lhs, NA) != IDENTIFIER )
     {
-        printf("Invalid binding name: %s\n", binding->lhs);
-        abort();
+        errorLog("Invalid binding name: %s\n", binding->lhs);
     }
 
     debugLog(context, "Parsing binding: %s", binding->lhs);
