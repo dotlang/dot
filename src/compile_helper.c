@@ -10,6 +10,7 @@ ExpressionType getType(LLVMValueRef value)
     if ( !strcmp(type_str, "double") ) return FLOAT;
     if ( !strcmp(type_str, "i1") ) return BOOL;
     if ( !strcmp(type_str, "i64") ) return INT;
+    if ( !strcmp(type_str, "i8") ) return CHAR;
 
     errorLog("Invliad type to get string representation: %s", type_str);
     abort();

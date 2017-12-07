@@ -22,6 +22,7 @@ LLVMTypeRef getBindingType(Binding* binding)
 {
     if ( !strcmp(binding->decl_type, "bool") ) return LLVMInt1Type();
     if ( !strcmp(binding->decl_type, "float") ) return LLVMDoubleType();
+    if ( !strcmp(binding->decl_type, "char") ) return LLVMInt8Type();
 
     return LLVMInt64Type();
 }

@@ -47,7 +47,8 @@ typedef enum
 {
     INT,
     FLOAT,
-    BOOL
+    BOOL,
+    CHAR
 } ExpressionType;
 
 typedef enum
