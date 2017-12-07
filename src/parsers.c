@@ -199,7 +199,7 @@ FunctionDecl* parseFunctionDecl(Context* context)
         ArgDef* arg_def = NULL;
         //function decl contains some inputs
         //in the form of name:type
-        while ( !matchLiteral(context, CLOSE_PAREN) )
+        while ( 1 )
         {
             ALLOC(temp_arg, ArgDef);
 
@@ -218,6 +218,9 @@ FunctionDecl* parseFunctionDecl(Context* context)
                 arg_def = arg_def->next;
                 function_decl->arg_count++;
             }
+
+            if ( matchLiteral(context, CLOSE_PAREN) ) break;
+            if ( !matchLiteral(context, COMMA) ) return NULL;
         }
 
         function_decl->last_arg = arg_def;

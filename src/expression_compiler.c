@@ -52,7 +52,6 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
 			//if this is a function level binding, load it's value from stack
 			if ( ptr != NULL )
             {
-                printf("Loading binding %s which is at %d\n", node->token, (int)ptr);
                 DO_PUSH(LLVMBuildLoad(context->builder, ptr, ""));
             }
             else
@@ -114,9 +113,8 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
                 int arg_count = node->arg_count;
                 //for now, functions do not have input
                 ALLOC_ARRAY(args, arg_count, LLVMValueRef);
-                printf("calling function %s with %d args\n", node->token, node->arg_count);
                 
-                for(int i=0;i<arg_count;i++)
+                for(int i=arg_count-1;i>=0;i--)
                 {
                     DO_POP(temp);
                     args[i] = temp;

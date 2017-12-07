@@ -76,7 +76,7 @@ TokenKind getTokenKind(char* token, TokenKind prev_kind)
 
     if ( len == 1 && token[0] == '-') 
     {
-        if ( prev_kind == NA || prev_kind == OPEN_PAREN || prev_kind == OPEN_BRACE ) return OP_NEG;
+        if ( prev_kind == OP_EQUALS || prev_kind == NA || prev_kind == OPEN_PAREN || prev_kind == OPEN_BRACE ) return OP_NEG;
         if ( isBinaryOp(prev_kind) ) return OP_NEG;
         return OP_SUB;
     }

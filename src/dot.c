@@ -85,7 +85,7 @@ void cleanupTemps(Context* context)
     debugLog(context, "cleaning up temp files...");
     char cleanup_cmd[1024];
     sprintf(cleanup_cmd, "rm -rf %s", context->llvmir_dir);
-    /* system(cleanup_cmd); */
+    if ( context->debug_mode == 0 ) system(cleanup_cmd);
     debugLog(context, "cleanup finished.");
 }
 

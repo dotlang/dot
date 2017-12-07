@@ -23,7 +23,6 @@ void compileFunctionDecl(Context* context, LLVMValueRef function, FunctionDecl* 
     for(int i=0;i<function_decl->arg_count;i++)
     {
         LLVMValueRef arg_ref = LLVMGetParam(function, i);
-        printf("adding %s arg as %d\n", arg->name, (int)arg_ref);
 
         LLVMTypeRef arg_type = expressionTypeToLLVMType(arg->type);
         LLVMValueRef alloc_ref = LLVMBuildAlloca(context->builder, arg_type, arg->name);
