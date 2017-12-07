@@ -1,0 +1,9 @@
+# vi:syntax=python
+
+main := () -> int
+{
+    test := -20
+    v10:int := -test
+    :: v10
+}
+

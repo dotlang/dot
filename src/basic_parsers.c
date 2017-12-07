@@ -47,14 +47,38 @@ bool newLineAhead(Context* context)
     }
 }
 
-TokenKind getTokenKind(char* token)
+bool isBinaryOp(TokenKind kind)
 {
+    return (kind == OP_ADD) || (kind == OP_SUB) || (kind == OP_MUL) ||
+        (kind == OP_DIV) || (kind == OP_REM) || (kind == OP_DVT) || (kind == OP_SHR) ||
+        (kind == OP_SHL);
+}
+
+TokenKind getTokenKind(char* token, TokenKind prev_kind)
+{
+    //if we have op_plus or op_minus and it's the first item, 
+    //after another binary op or after `(` then it is unary
+    //convert it to op_neg and op_pos
+    //handle these in algorithm, precedemce and associativity
+    
     int len = strlen(token);
     if ( len == 1 && token[0] == '(') return OPEN_PAREN;
     if ( len == 1 && token[0] == ':') return OP_COLON;;
     if ( len == 1 && token[0] == ')') return CLOSE_PAREN;
-    if ( len == 1 && token[0] == '+') return OP_ADD;
-    if ( len == 1 && token[0] == '-') return OP_SUB;
+    if ( len == 1 && token[0] == '+') 
+    {
+        if ( prev_kind == NA || prev_kind == OPEN_PAREN || prev_kind == OPEN_BRACE ) return OP_POS;
+        if ( isBinaryOp(prev_kind) ) return OP_POS;
+        return OP_ADD;
+    }
+
+    if ( len == 1 && token[0] == '-') 
+    {
+        if ( prev_kind == NA || prev_kind == OPEN_PAREN || prev_kind == OPEN_BRACE ) return OP_NEG;
+        if ( isBinaryOp(prev_kind) ) return OP_NEG;
+        return OP_SUB;
+    }
+
     if ( len == 1 && token[0] == '*') return OP_MUL;
     if ( len == 1 && token[0] == '/') return OP_DIV;
     if ( len == 1 && token[0] == '%') return OP_REM;
@@ -65,6 +89,8 @@ TokenKind getTokenKind(char* token)
     if ( len == 2 && token[0] == ':' && token[1] == '=' )  return OP_BIND;
     if ( len == 2 && token[0] == ':' && token[1] == ':' )  return OP_RETURN;
     if ( len == 2 && token[0] == '-' && token[1] == '>' )  return OP_ARROW;
+    if ( len == 2 && token[0] == '>' && token[1] == '>' )  return OP_SHR;
+    if ( len == 2 && token[0] == '<' && token[1] == '<' )  return OP_SHL;
     if ( isdigit(token[0]) ) return INT_LITERAL;
 
     return IDENTIFIER;
@@ -72,22 +98,28 @@ TokenKind getTokenKind(char* token)
 
 int getOperatorPrecedence(TokenKind kind)
 {
+    //numbers are based on C language operator precedence
+    //http://en.cppreference.com/w/c/language/operator_precedence
+    //numbers are reversed as they are 1-n in link above
     switch ( kind )
     {
-        case OP_ADD: return 2;
-        case OP_SUB: return 2;
-        case OP_MUL: return 3;
-        case OP_DIV: return 3;
-        case OP_REM: return 3;
-        case OP_DVT: return 3;
-        default: abort();
+        case OP_ADD: return 11;
+        case OP_SUB: return 11;
+        case OP_MUL: return 12;
+        case OP_DIV: return 12;
+        case OP_REM: return 12;
+        case OP_DVT: return 12;
+        case OP_POS: return 13;
+        case OP_NEG: return 13;
+        case OP_SHR: return 10;
+        case OP_SHL: return 10;
+        default: { printf("ABORT! for %d", kind); abort(); }
     }
-
-    abort();
 }
             
 bool isLeftAssociative(TokenKind kind)
 {
+    if ( kind == OP_POS || kind == OP_NEG ) return false;
     return true;
 }
 
@@ -121,7 +153,7 @@ bool matchLiteral(Context* context, int kind)
 
     if ( token[0] == 0 ) return false;
 
-    bool result = (getTokenKind(token) == kind);
+    bool result = (getTokenKind(token, NA) == kind);
 
     if ( !result )
     {
@@ -133,6 +165,9 @@ bool matchLiteral(Context* context, int kind)
 
 void getNextToken(Context* context, char* token)
 {
+    const char* complex_ops[] = { "%%", ":=", "::", "->", ">>", "<<"};
+    const char* simple_ops = "<>=+-*/()[].,{}:%";
+
     while ( 1 ) 
     {
         char c = getChar(context);
@@ -153,59 +188,24 @@ void getNextToken(Context* context, char* token)
             continue;
         }
 
-        //check for one-two character tokens
-        if ( c == '%' )
-        {
-            c = getChar(context);
-            if ( c == '%' )
-            {
-                token[0] = token[1] = '%';
-                token[2]=0;
-                return;
-            }
-            undoChar(context, c);
-            token[0] = '%';
-            token[1] = 0;
-            return;
-        }
-
-        if ( c == ':' )
-        {
-            c = getChar(context);
-            if ( c == ':' || c == '=' )
-            {
-                token[0] = ':';
-                token[1] = c;
-                token[2] = 0;
-                return;
-            }
-            undoChar(context, c);
-            token[0] = ':';
-            token[1] = 0;
-            return;
-        }
-
-        if ( c == '-' )
-        {
-            c = getChar(context);
-            if ( c == '>' )
-            {
-                token[0] = '-';
-                token[1] = '>';
-                token[2] = 0;
-                return;
-            }
-            undoChar(context, c);
-            token[0] = '-';
-            token[1] = 0;
-            return;
-        }
-        
-        //check for single character tokens
-        if ( strchr("+-*/{}[]().,", c) != NULL )
+        if ( strchr(simple_ops, c) != NULL )
         {
             token[0] = c;
+
+            char next_c = getChar(context);
+
+            for(size_t i=0;i<sizeof(complex_ops)/sizeof(complex_ops[0]);i++)
+            {
+                if ( complex_ops[i][0] == c && complex_ops[i][1] == next_c )
+                {
+                    token[1] = next_c;
+                    token[2] = 0;
+                    return;
+                }
+            }
+            undoChar(context, next_c);
             token[1] = 0;
+
             return;
         }
 

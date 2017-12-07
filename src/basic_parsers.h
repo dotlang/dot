@@ -10,7 +10,7 @@
 
 void getNextToken(Context* context, char* token);
 bool newLineAhead(Context* context);
-TokenKind getTokenKind(char* token);
+TokenKind getTokenKind(char* token, TokenKind prev_kind);
 int getOperatorPrecedence(TokenKind kind);
 bool isLeftAssociative(TokenKind kind);
 bool matchLiteral(Context* context, int kind);

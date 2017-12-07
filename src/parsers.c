@@ -25,6 +25,7 @@ Expression* parseExpression(Context* context)
 
     ExpressionNode* node = NULL;
     TokenKind kind = NA;
+    TokenKind prev_kind = NA;
     char token[32];
     Stack* fn_stack = new_stack();
     Stack* op_stack = new_stack();
@@ -45,7 +46,7 @@ Expression* parseExpression(Context* context)
         getNextToken(context, token);
         if ( token[0] == 0 ) break;
 
-        kind = getTokenKind(token);
+        kind = getTokenKind(token, prev_kind);
 
         if ( kind == INT_LITERAL )
         {
@@ -123,9 +124,6 @@ Expression* parseExpression(Context* context)
         }
         else //if we see a normal operator
         {
-            //TODO: if we have op_plus or op_minus and it's the first item, after another binary op or after `(` then it is unary
-            //convert it to op_neg and op_pos
-            //handle these in algorithm, precedemce and associativity
             int prec = getOperatorPrecedence(kind);
 
             //pop every operator in the op_stack which has lowe precedence or has same precedence and it left associative
@@ -149,6 +147,8 @@ Expression* parseExpression(Context* context)
             ALLOC_NODE(opr, token, kind);
             push(op_stack, opr);
         }
+
+        prev_kind = kind;
     }
 
     //at the end, pop from stack and move to output queue
@@ -234,7 +234,7 @@ Binding* parseBinding(Context* context)
     getNextToken(context, binding->lhs);
     if ( binding->lhs[0] == 0 ) return NULL;
 
-    if ( getTokenKind(binding->lhs) != IDENTIFIER )
+    if ( getTokenKind(binding->lhs, NA) != IDENTIFIER )
     {
         printf("Invalid binding name: %s\n", binding->lhs);
         abort();

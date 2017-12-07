@@ -1,0 +1,9 @@
+# vi:syntax=python
+# output should be 19
+main := () -> int
+{
+    test := -20 - -1 - -1 - -1 - (-1 - 1 - +2 + 1 - 8)
+    v10:int := -test + (27 % 14)
+    :: v10
+}
+

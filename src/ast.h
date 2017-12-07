@@ -56,13 +56,14 @@ typedef enum
     OP_SUB,
     OP_NEG, //unary -
     OP_POS, //unary +
+    OP_SHR,
+    OP_SHL,
     OP_MUL,
     OP_DIV,
     OP_REM,
     OP_DVT,
     OPEN_BRACE,
     CLOSE_BRACE,
-    OP_COMMA,
     COMMA,
     FN_CALL,
     OP_BIND,

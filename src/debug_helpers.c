@@ -63,7 +63,7 @@ void dumpExpression(Context* context, Expression* expression)
         }
         else
         {
-            debugLogNoNewLine(context, "%s ", node->token);
+            debugLogNoNewLine(context, "%s(%d) ", node->token, node->kind);
         }
         node = node->next;
     }
