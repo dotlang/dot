@@ -1,0 +1,6 @@
+main := () -> int
+{
+    c: char := 'a'
+    d: char := '0'
+    :: int(c)-int(d)
+}

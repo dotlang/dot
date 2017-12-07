@@ -74,8 +74,6 @@ void addPredefinedFunctions(Context* context)
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(main_func, "entry");
     LLVMPositionBuilderAtEnd(context->builder, entry);
     LLVMValueRef arg = LLVMGetFirstParam(main_func);
-    //LLVMValueRef r_value = LLVMBuildIntCast(context->builder, arg, LLVMInt64Type(), "cast");
-    //
     LLVMTypeRef int1Type = LLVMInt1Type();
     LLVMValueRef true_val = LLVMConstInt(int1Type, 1, true);
 
@@ -98,6 +96,16 @@ void addPredefinedFunctions(Context* context)
     r_value = LLVMBuildFPToSI(context->builder, arg, LLVMInt64Type(), "float_to_int");
     LLVMBuildRet(context->builder, r_value);
 
+    //cast char to int
+    LLVMTypeRef input_types3[] = { LLVMInt8Type() };
+    func_type = LLVMFunctionType(LLVMInt64Type(), input_types3, 1, 0);
+    main_func = LLVMAddFunction(context->module, "char_to_int", func_type);
+
+    entry = LLVMAppendBasicBlock(main_func, "entry");
+    LLVMPositionBuilderAtEnd(context->builder, entry);
+    arg = LLVMGetFirstParam(main_func);
+    r_value = LLVMBuildZExt(context->builder, arg, LLVMInt64Type(), "char_to_int");
+    LLVMBuildRet(context->builder, r_value);
 }
 
 void compileModule(Context* context, Module* m)

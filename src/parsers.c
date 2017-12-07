@@ -39,6 +39,7 @@ Expression* parseExpression(Context* context)
             if ( kind == IDENTIFIER ||
                  kind == INT_LITERAL ||
                  kind == FLOAT_LITERAL ||
+                 kind == CHAR_LITERAL ||
                  kind == BOOL_LITERAL ||
                  kind == CLOSE_PAREN )
             {
@@ -51,7 +52,7 @@ Expression* parseExpression(Context* context)
 
         kind = getTokenKind(token, prev_kind);
 
-        if ( kind == INT_LITERAL || kind == BOOL_LITERAL || kind == FLOAT_LITERAL)
+        if ( kind == INT_LITERAL || kind == BOOL_LITERAL || kind == FLOAT_LITERAL || kind == CHAR_LITERAL )
         {
             //if token is literal or identifier, just move it to output
             ALLOC_NODE(temp_node, token, kind);

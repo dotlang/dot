@@ -62,6 +62,7 @@ TokenKind getTokenKind(char* token, TokenKind prev_kind)
     //handle these in algorithm, precedemce and associativity
     
     int len = strlen(token);
+    if ( token[0] == '\'') return CHAR_LITERAL;
     if ( len == 1 && token[0] == '(') return OPEN_PAREN;
     if ( len == 1 && token[0] == ':') return OP_COLON;;
     if ( len == 1 && token[0] == ')') return CLOSE_PAREN;
@@ -211,6 +212,19 @@ void getNextToken(Context* context, char* token)
             }
             undoChar(context, next_c);
             token[1] = 0;
+
+            return;
+        }
+
+        if ( c == '\'')
+        {
+            c = getChar(context);
+            token[0] = '\'';
+            token[1] = c;
+            token[2] = getChar(context);
+
+            if ( token[2] != '\'' ) errorLog("Invalid char literal!");
+            token[3] = 0;
 
             return;
         }

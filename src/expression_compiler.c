@@ -31,6 +31,10 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
         {
             DO_PUSH(LLVMConstReal(LLVMDoubleType(), atof(node->token)));
         }
+        else if ( node->kind == CHAR_LITERAL )
+        {
+            DO_PUSH(LLVMConstInt(LLVMInt8Type(), (int)node->token[1], true));
+        }
         else if ( node->kind == BOOL_LITERAL )
         {
             if ( !strcmp(node->token, "true") )
@@ -125,9 +129,13 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
                     {
                         strcpy(fn_name, "float_to_int");
                     }
-                    else
+                    else if ( getType(args[0]) == BOOL )
                     {
                         strcpy(fn_name, "bool_to_int");
+                    }
+                    else
+                    {
+                        strcpy(fn_name, "char_to_int");
                     }
                 }
 
