@@ -45,6 +45,7 @@ typedef struct Binding Binding;
 
 typedef enum
 {
+    NA_TYPE,
     INT,
     FLOAT,
     BOOL,
@@ -100,7 +101,15 @@ typedef struct Expression
 typedef struct 
 {
     Binding* first_binding, *last_binding;
-} Module, FunctionDecl;
+} Module;
+
+typedef struct 
+{
+    Binding* first_binding, *last_binding;
+    
+    //declared output type
+    ExpressionType output_type;
+} FunctionDecl;
 
 typedef struct Binding
 {

@@ -173,6 +173,22 @@ Expression* parseExpression(Context* context)
     return expression;
 }
 
+ExpressionType readTypeDecl(Context* context)
+{
+    SAVE_POSITION;
+
+    char token[32];
+    getNextToken(context, token);
+
+    if ( !strcmp(token, "int") ) return INT;;
+    if ( !strcmp(token, "float") ) return FLOAT;
+    if ( !strcmp(token, "char") ) return CHAR;;
+    if ( !strcmp(token, "bool") ) return BOOL;;
+
+    RESTORE_POSITION;
+    return NA_TYPE;
+}
+
 FunctionDecl* parseFunctionDecl(Context* context)
 {
     ALLOC(function_decl, FunctionDecl);
@@ -182,8 +198,11 @@ FunctionDecl* parseFunctionDecl(Context* context)
     if ( !matchLiteral(context, CLOSE_PAREN) ) return NULL;
     if ( !matchLiteral(context, OP_ARROW) ) return NULL;
 
-    if ( matchText(context, "int") )
+    ExpressionType output_type;
+    if ( (output_type = readTypeDecl(context)) != NA_TYPE )
     {
+        function_decl->output_type = output_type;
+
         if ( !matchLiteral(context, OPEN_BRACE ) ) return NULL;
 
         Binding* binding = NULL;

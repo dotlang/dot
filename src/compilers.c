@@ -15,11 +15,22 @@ void compileFunctionDecl(Context* context, FunctionDecl* function_decl)
 
 LLVMTypeRef getFunctionType(FunctionDecl* function_decl)
 {
-    return LLVMFunctionType(LLVMInt64Type(), NULL, 0, 0);
+    switch ( function_decl->output_type )
+    {
+        case FLOAT:
+            return LLVMFunctionType(LLVMDoubleType(), NULL, 0, 0);
+        case CHAR:
+            return LLVMFunctionType(LLVMInt8Type(), NULL, 0, 0);
+        case BOOL:
+            return LLVMFunctionType(LLVMInt1Type(), NULL, 0, 0);
+        default:
+            return LLVMFunctionType(LLVMInt64Type(), NULL, 0, 0);
+    }
 }
 
 LLVMTypeRef getBindingType(Binding* binding)
 {
+    //TODO: some places we store char* some places ExpressionType, unify and simplify
     if ( !strcmp(binding->decl_type, "bool") ) return LLVMInt1Type();
     if ( !strcmp(binding->decl_type, "float") ) return LLVMDoubleType();
     if ( !strcmp(binding->decl_type, "char") ) return LLVMInt8Type();
