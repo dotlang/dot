@@ -45,6 +45,13 @@ typedef struct Binding Binding;
 
 typedef enum
 {
+    INT,
+    FLOAT,
+    BOOL
+} ExpressionType;
+
+typedef enum
+{
     NA,
     INT_LITERAL,
     FLOAT_LITERAL,

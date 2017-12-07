@@ -60,33 +60,40 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
             if ( node->kind == OP_ADD )
             {
                 DO_POP(op1); DO_POP(op2);
-                DO_PUSH(LLVMBuildAdd(context->builder, op1, op2, "temp"));
+                if ( getType(op1) == INT ) DO_PUSH(LLVMBuildAdd(context->builder, op1, op2, "temp"));
+                else DO_PUSH(LLVMBuildFAdd(context->builder, op1, op2, "temp"));
             }
             else if ( node->kind == OP_SUB )
             {
                 DO_POP(op1); DO_POP(op2);
-                DO_PUSH(LLVMBuildSub(context->builder, op2, op1, "temp"));
+                if ( getType(op1) == INT ) DO_PUSH(LLVMBuildSub(context->builder, op2, op1, "temp"));
+                else DO_PUSH(LLVMBuildFSub(context->builder, op2, op1, "temp"));
             }
             else if ( node->kind == OP_MUL )
             {
                 DO_POP(op1); DO_POP(op2);
-                DO_PUSH(LLVMBuildMul(context->builder, op1, op2, "temp"));
+                if ( getType(op1) == INT ) DO_PUSH(LLVMBuildMul(context->builder, op1, op2, "temp"));
+                else DO_PUSH(LLVMBuildFMul(context->builder, op1, op2, "temp"));
             }
             else if ( node->kind == OP_DIV )
             {
                 DO_POP(op1); DO_POP(op2);
-                DO_PUSH(LLVMBuildSDiv(context->builder, op2, op1, "temp"));
+                if ( getType(op1) == INT ) DO_PUSH(LLVMBuildSDiv(context->builder, op2, op1, "temp"));
+                else DO_PUSH(LLVMBuildFDiv(context->builder, op2, op1, "temp"));
+
             }
             else if ( node->kind == OP_REM )
             {
                 DO_POP(op1); DO_POP(op2);
-                DO_PUSH(LLVMBuildSRem(context->builder, op2, op1, "temp"));
+                if ( getType(op1) == INT ) DO_PUSH(LLVMBuildSRem(context->builder, op2, op1, "temp"));
+                else DO_PUSH(LLVMBuildFRem(context->builder, op2, op1, "temp"));
             }
             else if ( node->kind == OP_NEG )
             {
                 DO_POP(op);
-                DO_PUSH(LLVMBuildNeg (context->builder, op, "temp"));
-            }
+                if ( getType(op) == INT ) DO_PUSH(LLVMBuildNeg(context->builder, op, "temp"));
+                else DO_PUSH(LLVMBuildFNeg(context->builder, op, "temp"));
+             }
             else if ( node->kind == OP_SHR )
             {
                 DO_POP(op1); DO_POP(op2);
@@ -114,8 +121,7 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
 
                 if ( !strcmp(node->token, "int") )
                 {
-                    LLVMTypeRef type_ref = LLVMTypeOf(args[0]);  
-                    if ( LLVMGetTypeKind(type_ref) == LLVMDoubleTypeKind )
+                    if ( getType(args[0]) == FLOAT )
                     {
                         strcpy(fn_name, "float_to_int");
                     }

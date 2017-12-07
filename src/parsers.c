@@ -50,7 +50,6 @@ Expression* parseExpression(Context* context)
         if ( token[0] == 0 ) break;
 
         kind = getTokenKind(token, prev_kind);
-        printf("got token: %s, kind=%d\n", token, kind);
 
         if ( kind == INT_LITERAL || kind == BOOL_LITERAL || kind == FLOAT_LITERAL)
         {

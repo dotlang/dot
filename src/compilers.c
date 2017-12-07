@@ -94,7 +94,7 @@ void addPredefinedFunctions(Context* context)
     entry = LLVMAppendBasicBlock(main_func, "entry");
     LLVMPositionBuilderAtEnd(context->builder, entry);
     arg = LLVMGetFirstParam(main_func);
-    r_value = LLVMBuildIntCast(context->builder, arg, LLVMInt64Type(), "float_to_int");
+    r_value = LLVMBuildFPToSI(context->builder, arg, LLVMInt64Type(), "float_to_int");
     LLVMBuildRet(context->builder, r_value);
 
 }

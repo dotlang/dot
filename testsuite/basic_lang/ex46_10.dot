@@ -2,7 +2,8 @@
 # output should be 19
 main := () -> int
 {
-    item:float := 1.15
-    :: 10 
+    item:bool := true
+    item2: bool := false
+    :: int(item2)+int(item)*10
 }
 
