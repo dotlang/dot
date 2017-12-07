@@ -74,7 +74,7 @@ void generateExecutable(Context* context)
     //compile llvm output to object file
     debugLog(context, "compiling to native executable...");
     char clang_command[1024];
-    sprintf(clang_command, "clang -x ir -o %s %s", context->output_file_path, context->llvmir_file_path);
+    sprintf(clang_command, "clang -x ir -o %s ./src/inc.ll %s", context->output_file_path, context->llvmir_file_path);
     debugLog(context, "compilation command: %s", clang_command);
     system(clang_command);
     debugLog(context, "compilation finished.");

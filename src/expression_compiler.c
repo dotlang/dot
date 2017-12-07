@@ -156,6 +156,12 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
                 LLVMValueRef is_divisible =  LLVMBuildICmp(context->builder, LLVMIntEQ, rem, zero, "is_divisible");
                 DO_PUSH(LLVMBuildSelect(context->builder, is_divisible, one, zero, "int_is_divisible"));
             }
+            else if ( node->kind == OP_EQUALS )
+            {
+                DO_POP(op1); DO_POP(op2);
+                if ( getType(op1) == FLOAT ) DO_PUSH(LLVMBuildFCmp(context->builder, LLVMRealOEQ, op1, op2, "temp"));
+                else DO_PUSH(LLVMBuildICmp(context->builder, LLVMIntEQ, op1, op2, "temp"));
+            }
         }
 
         node = node->next;

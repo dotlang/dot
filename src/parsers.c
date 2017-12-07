@@ -131,11 +131,12 @@ Expression* parseExpression(Context* context)
             int prec = getOperatorPrecedence(kind);
 
             //pop every operator in the op_stack which has lowe precedence or has same precedence and it left associative
-            //until you see an opening parenthesis
+            //until you see an opening parenthesis (or fn_call which implied opening parenthesis)
             ExpressionNode* op_stack_top = (ExpressionNode*)peek(op_stack);
             while ( op_stack_top != NULL )
             {
                 if ( op_stack_top->kind == OPEN_PAREN ) break;
+                if ( op_stack_top->kind == FN_CALL ) break;
 
                 int stack_prec = getOperatorPrecedence(op_stack_top->kind);
                 if ( stack_prec < prec ) break;
@@ -234,6 +235,7 @@ FunctionDecl* parseFunctionDecl(Context* context)
 Binding* parseBinding(Context* context)
 {
     ALLOC(binding, Binding);
+    long start_position = ftell(context->input_file);
 
     getNextToken(context, binding->lhs);
     if ( binding->lhs[0] == 0 ) return NULL;
@@ -245,12 +247,23 @@ Binding* parseBinding(Context* context)
 
     debugLog(context, "Parsing binding: %s", binding->lhs);
 
+    //for implicit bindings which result is ignored, we dont have normal pattern (e.g. assert(x) )
+    bool is_explicit = false;
+
     if ( matchLiteral(context, OP_COLON) )
     {
         getNextToken(context, binding->decl_type);
+        is_explicit = true;
     }
 
-    if ( !matchLiteral(context, OP_BIND) ) return NULL;
+    if ( !matchLiteral(context, OP_BIND) )
+    {
+        //if it's an explicit binding, throw error
+        if ( is_explicit ) errorLog("Invalid binding definition: %s", binding->lhs);
+        //else, it's an explicit binding, restart from beginning and parse it
+        fseek(context->input_file, start_position, SEEK_SET);
+        strcpy(binding->lhs, "_");
+    }
 
     SAVE_POSITION;
     binding->function_decl = parseFunctionDecl(context);

@@ -64,6 +64,7 @@ void declareBinding(Context* context, Binding* binding)
     }
 }
 
+//TODO: simplify this. can we add raw llvm ir?
 void addPredefinedFunctions(Context* context)
 {
     LLVMTypeRef input_types[] = { LLVMInt1Type() };
@@ -71,41 +72,73 @@ void addPredefinedFunctions(Context* context)
     LLVMTypeRef func_type = LLVMFunctionType(LLVMInt64Type(), input_types, 1, 0);
     LLVMValueRef main_func = LLVMAddFunction(context->module, "bool_to_int", func_type);
 
-    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(main_func, "entry");
-    LLVMPositionBuilderAtEnd(context->builder, entry);
-    LLVMValueRef arg = LLVMGetFirstParam(main_func);
-    LLVMTypeRef int1Type = LLVMInt1Type();
-    LLVMValueRef true_val = LLVMConstInt(int1Type, 1, true);
+    /* LLVMBasicBlockRef entry = LLVMAppendBasicBlock(main_func, "entry"); */
+    /* LLVMPositionBuilderAtEnd(context->builder, entry); */
+    /* LLVMValueRef arg = LLVMGetFirstParam(main_func); */
+    /* LLVMTypeRef int1Type = LLVMInt1Type(); */
+    /* LLVMValueRef true_val = LLVMConstInt(int1Type, 1, true); */
 
-    LLVMTypeRef intType = LLVMInt64Type();
-    LLVMValueRef one = LLVMConstInt(intType, 1, true);
-    LLVMValueRef zero = LLVMConstInt(intType, 0, true);
+    /* LLVMTypeRef intType = LLVMInt64Type(); */
+    /* LLVMValueRef one = LLVMConstInt(intType, 1, true); */
+    /* LLVMValueRef zero = LLVMConstInt(intType, 0, true); */
 
-    LLVMValueRef is_true =  LLVMBuildICmp(context->builder, LLVMIntEQ, arg, true_val, "is_true");
-    LLVMValueRef r_value = LLVMBuildSelect(context->builder, is_true, one, zero, "bool_to_int");
-    LLVMBuildRet(context->builder, r_value);
+    /* LLVMValueRef is_true =  LLVMBuildICmp(context->builder, LLVMIntEQ, arg, true_val, "is_true"); */
+    /* LLVMValueRef r_value = LLVMBuildSelect(context->builder, is_true, one, zero, "bool_to_int"); */
+    /* LLVMBuildRet(context->builder, r_value); */
 
     //Cast float to int
     LLVMTypeRef input_types2[] = { LLVMDoubleType() };
     func_type = LLVMFunctionType(LLVMInt64Type(), input_types2, 1, 0);
     main_func = LLVMAddFunction(context->module, "float_to_int", func_type);
 
-    entry = LLVMAppendBasicBlock(main_func, "entry");
-    LLVMPositionBuilderAtEnd(context->builder, entry);
-    arg = LLVMGetFirstParam(main_func);
-    r_value = LLVMBuildFPToSI(context->builder, arg, LLVMInt64Type(), "float_to_int");
-    LLVMBuildRet(context->builder, r_value);
+    /* entry = LLVMAppendBasicBlock(main_func, "entry"); */
+    /* LLVMPositionBuilderAtEnd(context->builder, entry); */
+    /* arg = LLVMGetFirstParam(main_func); */
+    /* r_value = LLVMBuildFPToSI(context->builder, arg, LLVMInt64Type(), "float_to_int"); */
+    /* LLVMBuildRet(context->builder, r_value); */
 
     //cast char to int
     LLVMTypeRef input_types3[] = { LLVMInt8Type() };
     func_type = LLVMFunctionType(LLVMInt64Type(), input_types3, 1, 0);
     main_func = LLVMAddFunction(context->module, "char_to_int", func_type);
 
-    entry = LLVMAppendBasicBlock(main_func, "entry");
-    LLVMPositionBuilderAtEnd(context->builder, entry);
-    arg = LLVMGetFirstParam(main_func);
-    r_value = LLVMBuildZExt(context->builder, arg, LLVMInt64Type(), "char_to_int");
-    LLVMBuildRet(context->builder, r_value);
+    /* entry = LLVMAppendBasicBlock(main_func, "entry"); */
+    /* LLVMPositionBuilderAtEnd(context->builder, entry); */
+    /* arg = LLVMGetFirstParam(main_func); */
+    /* r_value = LLVMBuildZExt(context->builder, arg, LLVMInt64Type(), "char_to_int"); */
+    /* LLVMBuildRet(context->builder, r_value); */
+
+
+    //assert function
+    LLVMTypeRef input_types4[] = { LLVMInt1Type() };
+    func_type = LLVMFunctionType(LLVMInt64Type(), input_types4, 1, 0);
+    main_func = LLVMAddFunction(context->module, "assert", func_type);
+
+    /* entry = LLVMAppendBasicBlock(main_func, "entry"); */
+    /* LLVMPositionBuilderAtEnd(context->builder, entry); */
+    /* arg = LLVMGetFirstParam(main_func); */
+    /* true_val = LLVMConstInt(int1Type, 1, true); */
+    /* LLVMValueRef assert_result =  LLVMBuildICmp(context->builder, LLVMIntEQ, arg, true_val, "assert_result"); */
+    /* LLVMBasicBlockRef  assert_success_block = LLVMAppendBasicBlock(main_func, "assert_successful"); */
+    /* LLVMBasicBlockRef  assert_failed_block = LLVMAppendBasicBlock(main_func, "assert_failed"); */
+    /* r_value = LLVMBuildCondBr(context->builder, assert_result, assert_success_block, assert_failed_block); */
+
+
+    /* LLVMPositionBuilderAtEnd(context->builder, assert_success_block); */
+    /* LLVMBuildRet(context->builder, one); */
+
+
+    /* LLVMPositionBuilderAtEnd(context->builder, assert_failed_block); */
+    /* LLVMBuildRet(context->builder, zero); */
+
+    //abort function
+    /* func_type = LLVMFunctionType(LLVMVoidType(), NULL, 0, 0); */
+    /* LLVMAddFunction(context->module, "abort", func_type); */
+
+
+/* > FunctionType *AbortFTy = FunctionType::get(Type::getVoidTy(C), false); */
+/* > Function *AbortF = Function::Create(AbortFTy, */
+    /*     > GlobalValue::ExternalLinkage, "abort", M); */
 }
 
 void compileModule(Context* context, Module* m)

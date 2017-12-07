@@ -54,6 +54,7 @@ typedef enum
 typedef enum
 {
     NA,
+    OP_EQUALS,
     INT_LITERAL,
     FLOAT_LITERAL,
     BOOL_LITERAL,

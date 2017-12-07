@@ -65,6 +65,7 @@ TokenKind getTokenKind(char* token, TokenKind prev_kind)
     if ( token[0] == '\'') return CHAR_LITERAL;
     if ( len == 1 && token[0] == '(') return OPEN_PAREN;
     if ( len == 1 && token[0] == ':') return OP_COLON;;
+    if ( len == 1 && token[0] == '=') return OP_EQUALS;;
     if ( len == 1 && token[0] == ')') return CLOSE_PAREN;
     if ( len == 1 && token[0] == '+') 
     {
@@ -110,6 +111,7 @@ int getOperatorPrecedence(TokenKind kind)
     //numbers are reversed as they are 1-n in link above
     switch ( kind )
     {
+        case OP_EQUALS: return 1;
         case OP_ADD: return 11;
         case OP_SUB: return 11;
         case OP_MUL: return 12;
