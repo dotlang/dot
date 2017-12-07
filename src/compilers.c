@@ -21,6 +21,7 @@ LLVMTypeRef getFunctionType(FunctionDecl* function_decl)
 LLVMTypeRef getBindingType(Binding* binding)
 {
     if ( !strcmp(binding->decl_type, "bool") ) return LLVMInt1Type();
+    if ( !strcmp(binding->decl_type, "float") ) return LLVMDoubleType();
 
     return LLVMInt64Type();
 }
@@ -67,7 +68,7 @@ void addPredefinedFunctions(Context* context)
     LLVMTypeRef input_types[] = { LLVMInt1Type() };
 
     LLVMTypeRef func_type = LLVMFunctionType(LLVMInt64Type(), input_types, 1, 0);
-    LLVMValueRef main_func = LLVMAddFunction(context->module, "int", func_type);
+    LLVMValueRef main_func = LLVMAddFunction(context->module, "bool_to_int", func_type);
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(main_func, "entry");
     LLVMPositionBuilderAtEnd(context->builder, entry);
@@ -84,6 +85,18 @@ void addPredefinedFunctions(Context* context)
     LLVMValueRef is_true =  LLVMBuildICmp(context->builder, LLVMIntEQ, arg, true_val, "is_true");
     LLVMValueRef r_value = LLVMBuildSelect(context->builder, is_true, one, zero, "bool_to_int");
     LLVMBuildRet(context->builder, r_value);
+
+    //Cast float to int
+    LLVMTypeRef input_types2[] = { LLVMDoubleType() };
+    func_type = LLVMFunctionType(LLVMInt64Type(), input_types2, 1, 0);
+    main_func = LLVMAddFunction(context->module, "float_to_int", func_type);
+
+    entry = LLVMAppendBasicBlock(main_func, "entry");
+    LLVMPositionBuilderAtEnd(context->builder, entry);
+    arg = LLVMGetFirstParam(main_func);
+    r_value = LLVMBuildIntCast(context->builder, arg, LLVMInt64Type(), "float_to_int");
+    LLVMBuildRet(context->builder, r_value);
+
 }
 
 void compileModule(Context* context, Module* m)

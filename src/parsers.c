@@ -38,6 +38,7 @@ Expression* parseExpression(Context* context)
         {
             if ( kind == IDENTIFIER ||
                  kind == INT_LITERAL ||
+                 kind == FLOAT_LITERAL ||
                  kind == BOOL_LITERAL ||
                  kind == CLOSE_PAREN )
             {
@@ -49,17 +50,11 @@ Expression* parseExpression(Context* context)
         if ( token[0] == 0 ) break;
 
         kind = getTokenKind(token, prev_kind);
+        printf("got token: %s, kind=%d\n", token, kind);
 
-        if ( kind == INT_LITERAL )
+        if ( kind == INT_LITERAL || kind == BOOL_LITERAL || kind == FLOAT_LITERAL)
         {
-            //if token is number or identifier, just move it to output
-            ALLOC_NODE(temp_node, token, kind);
-
-            if ( node == NULL ) { node = expression->first_node = temp_node; }
-            else { node->next = temp_node; node = node->next; } 
-        }
-        else if ( kind == BOOL_LITERAL )
-        {
+            //if token is literal or identifier, just move it to output
             ALLOC_NODE(temp_node, token, kind);
 
             if ( node == NULL ) { node = expression->first_node = temp_node; }

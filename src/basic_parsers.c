@@ -91,7 +91,11 @@ TokenKind getTokenKind(char* token, TokenKind prev_kind)
     if ( len == 2 && token[0] == '-' && token[1] == '>' )  return OP_ARROW;
     if ( len == 2 && token[0] == '>' && token[1] == '>' )  return OP_SHR;
     if ( len == 2 && token[0] == '<' && token[1] == '<' )  return OP_SHL;
-    if ( isdigit(token[0]) ) return INT_LITERAL;
+    if ( isdigit(token[0]) )
+    {
+        if ( strchr(token, '.') == NULL ) return INT_LITERAL;
+        return FLOAT_LITERAL;
+    }
 
     if ( !strcmp(token, "true") || !strcmp(token, "false") ) return BOOL_LITERAL;
 
@@ -168,7 +172,7 @@ bool matchLiteral(Context* context, int kind)
 void getNextToken(Context* context, char* token)
 {
     const char* complex_ops[] = { "%%", ":=", "::", "->", ">>", "<<"};
-    const char* simple_ops = "<>=+-*/()[].,{}:%";
+    const char* simple_ops = "<>=+-*/()[],{}:%";
 
     while ( 1 ) 
     {
@@ -215,9 +219,22 @@ void getNextToken(Context* context, char* token)
         if ( isdigit(c) )
         {
             int len = 0;
-            while ( isdigit(c) )
+            bool saw_dot = false;
+            while ( isdigit(c) || c == '.' )
             {
                 token[len++] = c;
+                if ( c == '.' ) 
+                {
+                    if ( saw_dot == false )
+                    {
+                        saw_dot = true;
+                    }
+                    else
+                    {
+                        token[len+1]=0;
+                        errorLog("Invalid float literal: %s", token);
+                    }
+                }
                 c = getChar(context);
             }
             undoChar(context, c);

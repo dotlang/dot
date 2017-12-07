@@ -27,6 +27,10 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
         {
             DO_PUSH(LLVMConstInt(intType, atoi(node->token), true));
         }
+        else if ( node->kind == FLOAT_LITERAL )
+        {
+            DO_PUSH(LLVMConstReal(LLVMDoubleType(), atof(node->token)));
+        }
         else if ( node->kind == BOOL_LITERAL )
         {
             if ( !strcmp(node->token, "true") )
@@ -98,16 +102,33 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
                 int arg_count = node->arg_count;
                 //for now, functions do not have input
                 ALLOC_ARRAY(args, arg_count, LLVMValueRef);
-                LLVMValueRef fn_ref = LLVMGetNamedFunction(context->module, node->token);
-                if ( fn_ref == NULL )
-                {
-                    errorLog("Cannot find function: %s\n", node->token);
-                }
-
+                
                 for(int i=0;i<arg_count;i++)
                 {
                     DO_POP(temp);
                     args[i] = temp;
+                }
+
+                char fn_name[128];
+                strcpy(fn_name, node->token);
+
+                if ( !strcmp(node->token, "int") )
+                {
+                    LLVMTypeRef type_ref = LLVMTypeOf(args[0]);  
+                    if ( LLVMGetTypeKind(type_ref) == LLVMDoubleTypeKind )
+                    {
+                        strcpy(fn_name, "float_to_int");
+                    }
+                    else
+                    {
+                        strcpy(fn_name, "bool_to_int");
+                    }
+                }
+
+                LLVMValueRef fn_ref = LLVMGetNamedFunction(context->module, fn_name);
+                if ( fn_ref == NULL )
+                {
+                    errorLog("Cannot find function: %s\n", node->token);
                 }
 
                 //so the result here is a function we have to invoke
