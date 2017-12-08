@@ -78,6 +78,8 @@ Expression* parseExpression(Context* context)
                 }
                 else
                 {
+                    //the function call has at least one arg
+                    temp_node->arg_count=1;
                     push(op_stack, temp_node);
                     push(fn_stack, temp_node);
                 }
@@ -120,8 +122,7 @@ Expression* parseExpression(Context* context)
 
             if ( op_stack_top->kind == FN_CALL )
             {
-                //we do not count the last argument, as we inc arg_count with each comma
-                op_stack_top->arg_count++;
+                pop(fn_stack);
                 node->next = op_stack_top;
                 node = node->next;
             }
