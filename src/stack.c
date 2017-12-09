@@ -1,6 +1,5 @@
 #include "stack.h"
 
-
 Stack* new_stack()
 {
     ALLOC(stack, Stack);

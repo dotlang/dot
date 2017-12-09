@@ -57,14 +57,7 @@ void dumpExpression(Context* context, Expression* expression)
     ExpressionNode* node = expression->first_node;
     while ( node != NULL ) 
     {
-        if ( node->kind == FN_CALL )
-        {
-            debugLogNoNewLine(context, "%s() ", node->token);
-        }
-        else
-        {
-            debugLogNoNewLine(context, "%s(%d) ", node->token, node->kind);
-        }
+        debugLogNoNewLine(context, "%s(%d) ", node->token, node->kind);
         node = node->next;
     }
     debugLog(context, "\n");

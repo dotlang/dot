@@ -1,7 +1,5 @@
 #include "compile_helper.h"
 
-
-
 ExpressionType getType(LLVMValueRef value)
 {
     LLVMTypeRef type_ref = LLVMTypeOf(value);

@@ -122,6 +122,9 @@ int getOperatorPrecedence(TokenKind kind)
         case OP_NEG: return 13;
         case OP_SHR: return 10;
         case OP_SHL: return 10;
+        case COMMA: return 0;
+        case FN_CALL: return 14;
+        case FN_CALL_SIMPLE: return 14;
         default: { errorLog("Aborting! Invalid operator: %d\n", kind); abort(); }
     }
 }

@@ -76,6 +76,7 @@ typedef enum
     CLOSE_BRACE,
     COMMA,
     FN_CALL,
+    FN_CALL_SIMPLE, //function call without arg
     OP_BIND,
     OP_ARROW,
     OP_RETURN,
@@ -87,7 +88,7 @@ typedef struct ExpressionNode
     char token[32];
     TokenKind kind;
     //only for function call
-    int arg_count;
+    /* int arg_count; */
 
     struct ExpressionNode* next;
 } ExpressionNode;
@@ -133,6 +134,16 @@ typedef struct Binding
 
     struct Binding* next;
 } Binding;
+
+
+typedef struct FunctionArgList
+{
+    struct FunctionArg
+    {
+        LLVMValueRef arg;
+        struct FunctionArg* next;
+    } *first_arg;
+} FunctionArgList;
 
 
 #endif

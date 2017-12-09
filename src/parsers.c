@@ -29,9 +29,17 @@ Expression* parseExpression(Context* context)
     TokenKind kind = NA;
     TokenKind prev_kind = NA;
     char token[32];
-    Stack* fn_stack = new_stack();
+    //used to keep track of the current function call, to update it's argument count
+    //process(1,2,3)
+    //TODO: can we eliminate fn_stack and add a marker instead?
+    //when we see process( we add a marker to mark start of an arg-list
+    //when we see ) we insert function name to call
+    /* Stack* fn_stack = new_stack(); */
     Stack* op_stack = new_stack();
 
+    //f(1,2,3,4)
+    //1 2 , 3 , 4 , f
+    //we can think of comma as an operator
     while ( 1 )
     {
         bool add_node = true;
@@ -55,24 +63,25 @@ Expression* parseExpression(Context* context)
         {
             if ( matchLiteral(context, OPEN_PAREN) )
             {
-                //add it to stack
-                temp_node->kind = FN_CALL;
+                //assume function has no parameter to send
+                temp_node->kind = FN_CALL_SIMPLE;
 
                 if ( !matchLiteral(context, CLOSE_PAREN) )
                 {
+                    temp_node->kind = FN_CALL;
                     //the function call has at least one arg
-                    temp_node->arg_count=1;
+                    /* temp_node->arg_count=1; */
                     push(op_stack, temp_node);
-                    push(fn_stack, temp_node);
+                    /* push(fn_stack, temp_node); */
                     add_node = false;
                 }
             }
         }
-        else if ( kind == COMMA )
-        {
-            ((ExpressionNode*)peek(fn_stack))->arg_count++;
-            add_node=false;
-        }
+        /* else if ( kind == COMMA ) */
+        /* { */
+        /*     /1* ((ExpressionNode*)peek(fn_stack))->arg_count++; *1/ */
+        /*     /1* add_node=false; *1/ */
+        /* } */
         else if ( kind == OPEN_PAREN )
         {
             //use kind for all comparisons, not token
@@ -100,12 +109,12 @@ Expression* parseExpression(Context* context)
 
             if ( op_stack_top->kind == FN_CALL )
             {
-                pop(fn_stack);
+                /* pop(fn_stack); */
                 CHAIN_LIST(expression->first_node, prev_node, op_stack_top);
             }
             add_node=false;
         }
-        else if ( !isLiteralKind(kind) ) //if we see a normal operator
+        else if ( !isLiteralKind(kind) ) //if we see a normal operator (including comma)
         {
             int prec = getOperatorPrecedence(kind);
 
@@ -172,11 +181,11 @@ FunctionDecl* parseFunctionDecl(Context* context)
     ALLOC(function_decl, FunctionDecl);
 
     if ( !matchLiteral(context, OPEN_PAREN) ) return NULL;
+    //does the function have any inputs? (name1: type1, name2: type2, ...)
     if ( !matchLiteral(context, CLOSE_PAREN) ) 
     {
         ArgDef* prev_arg_def = NULL;
-        //function decl contains some inputs
-        //in the form of name:type
+
         while ( 1 )
         {
             ALLOC(temp_arg_def, ArgDef);
@@ -186,7 +195,6 @@ FunctionDecl* parseFunctionDecl(Context* context)
             getNextToken(context, temp_arg_def->type);
 
             CHAIN_LIST(function_decl->first_arg, prev_arg_def, temp_arg_def);
-            /* function_decl->arg_count++; */
 
             if ( matchLiteral(context, CLOSE_PAREN) ) break;
             if ( !matchLiteral(context, COMMA) ) return NULL;

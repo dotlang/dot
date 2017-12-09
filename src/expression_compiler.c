@@ -1,6 +1,5 @@
 #include "expression_compiler.h"
 
-//TODO: add shift operators
 #define DO_POP(N) LLVMValueRef N = (LLVMValueRef)pop(stack)
 #define DO_PUSH(N) push(stack, N)
 
@@ -108,16 +107,82 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
                 DO_POP(op1); DO_POP(op2);
                 DO_PUSH(LLVMBuildShl(context->builder, op2, op1, "temp"));
             }
+            else if ( node->kind == FN_CALL_SIMPLE )
+            {
+                LLVMValueRef fn_ref = LLVMGetNamedFunction(context->module, node->token);
+                if ( fn_ref == NULL )
+                {
+                    errorLog("Cannot find function: %s\n", node->token);
+                }
+
+                //so the result here is a function we have to invoke
+                DO_PUSH(LLVMBuildCall(context->builder, fn_ref, NULL, 0, ""));
+            }
+            else if ( node->kind == COMMA )
+            {
+                //add as place holder. This means: if you want me, just pop previous two elements from stack
+                DO_PUSH(NULL);
+            }
             else if ( node->kind == FN_CALL )
             {
-                int arg_count = node->arg_count;
-                //for now, functions do not have input
+                //1 2 , 3 , proc 
+                //1 push
+                //2 push
+                //, pop both and push (1,2)
+                //3 push
+                //, pop last two and push (1,2,3)
+                //proc: pop (1,2,3) and use it for call
+                //so we can store LLVMValueRef or a linked list of value-refs in our stack
+                //or we can keep them in stack and increment some counter?
+                //
+                //1 2 , 3 , proc 
+                //1 push
+                //2 push
+                //, setup counter of 2
+                //1 2 + proc
+                //process(1,2,save(3,4),5)
+                //1 2 , 3 4 , save , 5 , process
+                //TODO: treat comma just like a normal value and push it into stack.
+                //As we store LLVMValueRefs there, just put NULL as a place-holder
+                //when you see a simple func call -> just render like normal
+                //when you see fn_call: pop last item as the argument for function
+                //if it is NULL (comma), pop two previous items and if any of them are 
+                //NULL, pop their two previous and go on, until you have the data
+                ALLOC(arg_list, FunctionArgList);
+                struct FunctionArg* prev_item = NULL;
+
+                int remaining_to_pop = 1;
+                while ( remaining_to_pop > 0 ) 
+                {
+                    void* data = pop(stack);
+                    remaining_to_pop--;
+
+                    if ( data == NULL ) remaining_to_pop += 2;
+                    else
+                    {
+                        ALLOC(temp_item, struct FunctionArg);
+
+                        temp_item->arg = (LLVMValueRef)data;
+                        CHAIN_LIST(arg_list->first_arg, prev_item, temp_item);
+                    }
+                }
+
+                //now we have all the arguments inside arg_list linked list
+                int arg_count = 0;
+                prev_item = arg_list->first_arg;
+                while ( prev_item != NULL )
+                {
+                    arg_count++;
+                    prev_item = prev_item->next;
+                }
+
                 ALLOC_ARRAY(args, arg_count, LLVMValueRef);
                 
+                prev_item = arg_list->first_arg;
                 for(int i=arg_count-1;i>=0;i--)
                 {
-                    DO_POP(temp);
-                    args[i] = temp;
+                    args[i] = prev_item->arg;
+                    prev_item = prev_item->next;
                 }
 
                 char fn_name[128];
