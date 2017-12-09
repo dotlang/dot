@@ -107,9 +107,6 @@ typedef struct ArgDef
     char name[32];
     char type[32];
 
-    //TODO: can we replace this with llvmtyperef?
-    /* ExpressionType type; */
-
     struct ArgDef* next;
 } ArgDef;
 
@@ -120,7 +117,7 @@ typedef struct
     int arg_count;
     
     //declared output type
-    ExpressionType output_type;
+    char output_type[32];
 } FunctionDecl;
 
 typedef struct Binding

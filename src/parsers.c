@@ -156,20 +156,19 @@ Expression* parseExpression(Context* context)
     return expression;
 }
 
-ExpressionType readTypeDecl(Context* context)
+bool readTypeDecl(Context* context, char* token)
 {
     SAVE_POSITION;
 
-    char token[32];
     getNextToken(context, token);
 
-    if ( !strcmp(token, "int") ) return INT;;
-    if ( !strcmp(token, "float") ) return FLOAT;
-    if ( !strcmp(token, "char") ) return CHAR;;
-    if ( !strcmp(token, "bool") ) return BOOL;;
+    if ( !strcmp(token, "int") ) return true;
+    if ( !strcmp(token, "float") ) return  true;
+    if ( !strcmp(token, "char") ) return true;
+    if ( !strcmp(token, "bool") ) return true;
 
     RESTORE_POSITION;
-    return NA_TYPE;
+    return false;
 }
 
 FunctionDecl* parseFunctionDecl(Context* context)
@@ -200,10 +199,10 @@ FunctionDecl* parseFunctionDecl(Context* context)
 
     if ( !matchLiteral(context, OP_ARROW) ) return NULL;
 
-    ExpressionType output_type;
-    if ( (output_type = readTypeDecl(context)) != NA_TYPE )
+    char output_type[32];
+    if ( readTypeDecl(context, output_type) )
     {
-        function_decl->output_type = output_type;
+        strcpy(function_decl->output_type, output_type);
 
         if ( !matchLiteral(context, OPEN_BRACE ) ) return NULL;
 

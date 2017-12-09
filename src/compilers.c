@@ -2,28 +2,6 @@
 
 void compileBinding(Context* context, Binding* binding);
 
-LLVMTypeRef expressionTypeToLLVMType(ExpressionType type)
-{
-    switch ( type )
-    {
-        case INT: return LLVMInt64Type();
-        case CHAR: return LLVMInt8Type();
-        case BOOL: return LLVMInt1Type();
-        case FLOAT: return LLVMDoubleType();
-        default:
-            abort();
-    }
-}
-
-//TODO: remove this
-ExpressionType readTypeDeclCmp(Context* context, char* token)
-{
-    if ( !strcmp(token, "int") ) return INT;;
-    if ( !strcmp(token, "float") ) return FLOAT;
-    if ( !strcmp(token, "char") ) return CHAR;;
-    if ( !strcmp(token, "bool") ) return BOOL;;
-    return NA_TYPE;
-}
 void compileFunctionDecl(Context* context, LLVMValueRef function, FunctionDecl* function_decl)
 {
     ArgDef* arg = function_decl->first_arg;
@@ -36,7 +14,7 @@ void compileFunctionDecl(Context* context, LLVMValueRef function, FunctionDecl* 
     {
         LLVMValueRef arg_ref = LLVMGetParam(function, i);
 
-        LLVMTypeRef arg_type = expressionTypeToLLVMType(readTypeDeclCmp(context, arg->type));
+        LLVMTypeRef arg_type = expressionTypeToLLVMType(arg->type);
         LLVMValueRef alloc_ref = LLVMBuildAlloca(context->builder, arg_type, arg->name);
         LLVMBuildStore(context->builder, arg_ref, alloc_ref);
         ht_set(context->function_bindings, arg->name, alloc_ref);
@@ -51,40 +29,6 @@ void compileFunctionDecl(Context* context, LLVMValueRef function, FunctionDecl* 
         binding = binding->next;
     }
 
-}
-
-LLVMTypeRef getFunctionType(Context* context, FunctionDecl* function_decl)
-{
-    ALLOC_ARRAY(args, function_decl->arg_count, LLVMTypeRef);
-
-    ArgDef* arg = function_decl->first_arg;
-    for(int i=0;i<function_decl->arg_count;i++)
-    {
-        args[i] = expressionTypeToLLVMType(readTypeDeclCmp(context, arg->type));
-        arg = arg->next;
-    }
-
-    switch ( function_decl->output_type )
-    {
-        case FLOAT:
-            return LLVMFunctionType(LLVMDoubleType(), args, function_decl->arg_count, 0);
-        case CHAR:
-            return LLVMFunctionType(LLVMInt8Type(), args, function_decl->arg_count, 0);
-        case BOOL:
-            return LLVMFunctionType(LLVMInt1Type(), args, function_decl->arg_count, 0);
-        default:
-            return LLVMFunctionType(LLVMInt64Type(), args, function_decl->arg_count, 0);
-    }
-}
-
-LLVMTypeRef getBindingType(Binding* binding)
-{
-    //TODO: some places we store char* some places ExpressionType, unify and simplify
-    if ( !strcmp(binding->decl_type, "bool") ) return LLVMInt1Type();
-    if ( !strcmp(binding->decl_type, "float") ) return LLVMDoubleType();
-    if ( !strcmp(binding->decl_type, "char") ) return LLVMInt8Type();
-
-    return LLVMInt64Type();
 }
 
 void compileBinding(Context* context, Binding* binding)
