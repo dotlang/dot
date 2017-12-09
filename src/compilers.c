@@ -15,16 +15,28 @@ LLVMTypeRef expressionTypeToLLVMType(ExpressionType type)
     }
 }
 
+//TODO: remove this
+ExpressionType readTypeDeclCmp(Context* context, char* token)
+{
+    if ( !strcmp(token, "int") ) return INT;;
+    if ( !strcmp(token, "float") ) return FLOAT;
+    if ( !strcmp(token, "char") ) return CHAR;;
+    if ( !strcmp(token, "bool") ) return BOOL;;
+    return NA_TYPE;
+}
 void compileFunctionDecl(Context* context, LLVMValueRef function, FunctionDecl* function_decl)
 {
     ArgDef* arg = function_decl->first_arg;
+
+    //clear list of function bindings to prevent name clash between functions
+	context->function_bindings = ht_create(100);
 
     //first we need to allocate function inputs
     for(int i=0;i<function_decl->arg_count;i++)
     {
         LLVMValueRef arg_ref = LLVMGetParam(function, i);
 
-        LLVMTypeRef arg_type = expressionTypeToLLVMType(arg->type);
+        LLVMTypeRef arg_type = expressionTypeToLLVMType(readTypeDeclCmp(context, arg->type));
         LLVMValueRef alloc_ref = LLVMBuildAlloca(context->builder, arg_type, arg->name);
         LLVMBuildStore(context->builder, arg_ref, alloc_ref);
         ht_set(context->function_bindings, arg->name, alloc_ref);
@@ -41,14 +53,14 @@ void compileFunctionDecl(Context* context, LLVMValueRef function, FunctionDecl* 
 
 }
 
-LLVMTypeRef getFunctionType(FunctionDecl* function_decl)
+LLVMTypeRef getFunctionType(Context* context, FunctionDecl* function_decl)
 {
     ALLOC_ARRAY(args, function_decl->arg_count, LLVMTypeRef);
 
     ArgDef* arg = function_decl->first_arg;
     for(int i=0;i<function_decl->arg_count;i++)
     {
-        args[i] = expressionTypeToLLVMType(arg->type);
+        args[i] = expressionTypeToLLVMType(readTypeDeclCmp(context, arg->type));
         arg = arg->next;
     }
 
@@ -107,7 +119,7 @@ void declareBinding(Context* context, Binding* binding)
 {
     if ( binding->function_decl != NULL )
     {
-        LLVMTypeRef func_type = getFunctionType(binding->function_decl);
+        LLVMTypeRef func_type = getFunctionType(context, binding->function_decl);
         LLVMAddFunction(context->module, binding->lhs, func_type);
     }
 }

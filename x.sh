@@ -43,7 +43,7 @@ dotest() {
 
     rm $file_name
 
-    test_file_compact=${test_file:12}
+    test_file_compact=${test_file}
     str_len=${#test_file_compact}
     pad="\t\t"
     if [ "$str_len" -gt "22" ]

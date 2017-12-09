@@ -14,6 +14,13 @@
                 ALLOC(V, ExpressionNode);\
                 strcpy(V->token, TOKEN);\
                 V->kind = kind
+//TODO: remove this
+#define SET_IF_NULL(DATA, VALUE) if ( DATA == NULL ) DATA=VALUE
+#define CHAIN_LIST(FIELD, PREV, CURR) \
+                if ( FIELD == NULL ) FIELD = CURR;\
+                if ( PREV != NULL ) PREV->next = CURR;\
+                PREV = CURR
+
 /* #define PARSE(R, F) R = F(context); if ( R == NULL ) return NULL */
 /* #define PARSE_ELSE(R, F) R = F(context); if ( R == NULL ) */
 
@@ -95,29 +102,29 @@ typedef struct ExpressionNode
 
 typedef struct Expression
 {
-    ExpressionNode *first_node, *last_node;
+    ExpressionNode *first_node;
 } Expression;
 
 typedef struct 
 {
-    Binding* first_binding, *last_binding;
+    Binding *first_binding;
 } Module;
 
 typedef struct ArgDef
 {
     char name[32];
+    char type[32];
+
     //TODO: can we replace this with llvmtyperef?
-    ExpressionType type;
+    /* ExpressionType type; */
 
     struct ArgDef* next;
 } ArgDef;
 
 typedef struct 
 {
-    Binding* first_binding, *last_binding;
-
-    //TODO: can we remove last* from all lists?
-    ArgDef *first_arg, *last_arg;
+    Binding *first_binding;
+    ArgDef *first_arg;
     int arg_count;
     
     //declared output type

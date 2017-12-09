@@ -21,20 +21,26 @@ Binding* parseBinding(Context*);
 //TODO: can we simplify this?
 Expression* parseExpression(Context* context)
 {
-    //TODO: there are a lot of checks that can be done here to make sure exp has correct syntax
     ALLOC(expression, Expression);
 
-    ExpressionNode* node = NULL;
+    //TODO: there are a lot of checks that can be done here to make sure exp has correct syntax
+    ExpressionNode* prev_node = NULL;
+
+    //TODO: remove
     TokenKind kind = NA;
+    //TODO: replace using prev node
     TokenKind prev_kind = NA;
+    //TODO: remove
     char token[32];
     Stack* fn_stack = new_stack();
     Stack* op_stack = new_stack();
 
     while ( 1 )
     {
+        bool add_node = true;
+
         //ignore newLine if it's the first thing we see
-        if ( node != NULL && newLineAhead(context) )
+        if ( prev_node != NULL && newLineAhead(context) )
         {
             if ( kind == IDENTIFIER ||
                  kind == INT_LITERAL ||
@@ -51,19 +57,14 @@ Expression* parseExpression(Context* context)
         if ( token[0] == 0 ) break;
 
         kind = getTokenKind(token, prev_kind);
+        ALLOC_NODE(temp_node, token, kind);
 
         if ( kind == INT_LITERAL || kind == BOOL_LITERAL || kind == FLOAT_LITERAL || kind == CHAR_LITERAL )
         {
             //if token is literal or identifier, just move it to output
-            ALLOC_NODE(temp_node, token, kind);
-
-            if ( node == NULL ) { node = expression->first_node = temp_node; }
-            else { node->next = temp_node; node = node->next; } 
         }
         else if ( kind == IDENTIFIER )
         {
-            ALLOC_NODE(temp_node, token, kind);
-
             if ( matchLiteral(context, OPEN_PAREN) )
             {
                 //add it to stack
@@ -73,8 +74,6 @@ Expression* parseExpression(Context* context)
                 {
                     //this is a function call without arg
                     //do not add it to the stack but add to the output
-                    if ( node == NULL ) { node = expression->first_node = temp_node; }
-                    else { node->next = temp_node; node = node->next; } 
                 }
                 else
                 {
@@ -82,18 +81,18 @@ Expression* parseExpression(Context* context)
                     temp_node->arg_count=1;
                     push(op_stack, temp_node);
                     push(fn_stack, temp_node);
+                    add_node = false;
                 }
             }
             else
             {
                 //this is a binding name - add to output
-                if ( node == NULL ) { node = expression->first_node = temp_node; }
-                else { node->next = temp_node; node = node->next; } 
             }
         }
         else if ( kind == COMMA )
         {
             ((ExpressionNode*)peek(fn_stack))->arg_count++;
+            add_node=false;
         }
         else if ( kind == OPEN_PAREN )
         {
@@ -102,6 +101,7 @@ Expression* parseExpression(Context* context)
             ALLOC_NODE(lpar, token, kind);
 
             push(op_stack, lpar);
+            add_node=false;
         }
         else if ( kind == CLOSE_PAREN )
         {
@@ -111,8 +111,9 @@ Expression* parseExpression(Context* context)
             {
                 if ( op_stack_top->kind == OPEN_PAREN || op_stack_top->kind == FN_CALL ) break;
 
-                node->next = op_stack_top;
-                node = node->next;
+                prev_node->next = op_stack_top;
+                //TODO: use chain_list
+                prev_node = prev_node->next;
                 pop(op_stack);
                 op_stack_top = (ExpressionNode*)peek(op_stack);
             }
@@ -123,9 +124,12 @@ Expression* parseExpression(Context* context)
             if ( op_stack_top->kind == FN_CALL )
             {
                 pop(fn_stack);
-                node->next = op_stack_top;
-                node = node->next;
+
+                //TODO: use chain_list
+                prev_node->next = op_stack_top;
+                prev_node = prev_node->next;
             }
+            add_node=false;
         }
         else //if we see a normal operator
         {
@@ -144,14 +148,23 @@ Expression* parseExpression(Context* context)
                 if ( stack_prec == prec && !isLeftAssociative(op_stack_top->kind) ) break;
 
                 pop(op_stack);
-                node->next = op_stack_top;
-                node = node->next;
+                //TODO: use chain list macro
+                prev_node->next = op_stack_top;
+                prev_node = prev_node->next;
 
                 op_stack_top = (ExpressionNode*)peek(op_stack);
             }
 
             ALLOC_NODE(opr, token, kind);
             push(op_stack, opr);
+            add_node=false;
+        }
+
+        if ( add_node ) 
+        {
+            if ( prev_node != NULL ) prev_node->next = temp_node;
+            SET_IF_NULL(expression->first_node, temp_node);
+            prev_node = temp_node;
         }
 
         prev_kind = kind;
@@ -161,13 +174,12 @@ Expression* parseExpression(Context* context)
     ExpressionNode* op_stack_top = (ExpressionNode*)pop(op_stack);
     while ( op_stack_top != NULL )
     {
-        node->next = op_stack_top;
-        node = node->next;
+        //TODO: use chain list 
+        prev_node->next = op_stack_top;
+        prev_node = prev_node->next;
 
         op_stack_top = (ExpressionNode*)pop(op_stack);
     }
-
-    expression->last_node = node;
 
     dumpExpression(context, expression);
 
@@ -197,34 +209,26 @@ FunctionDecl* parseFunctionDecl(Context* context)
     if ( !matchLiteral(context, OPEN_PAREN) ) return NULL;
     if ( !matchLiteral(context, CLOSE_PAREN) ) 
     {
-        ArgDef* arg_def = NULL;
+        ArgDef* prev_arg_def = NULL;
         //function decl contains some inputs
         //in the form of name:type
         while ( 1 )
         {
-            ALLOC(temp_arg, ArgDef);
+            ALLOC(temp_arg_def, ArgDef);
 
-            getNextToken(context, temp_arg->name);
+            if ( prev_arg_def != NULL ) prev_arg_def->next = temp_arg_def;
+
+            getNextToken(context, temp_arg_def->name);
             if ( !matchLiteral(context, OP_COLON) ) return NULL;
-            temp_arg->type = readTypeDecl(context);
+            getNextToken(context, temp_arg_def->type);
 
-            if ( arg_def == NULL )
-            {
-                arg_def = function_decl->first_arg = temp_arg;
-                function_decl->arg_count++;
-            }
-            else
-            {
-                arg_def->next = temp_arg;
-                arg_def = arg_def->next;
-                function_decl->arg_count++;
-            }
+            SET_IF_NULL(function_decl->first_arg, temp_arg_def);
+            function_decl->arg_count++;
+            prev_arg_def = temp_arg_def;
 
             if ( matchLiteral(context, CLOSE_PAREN) ) break;
             if ( !matchLiteral(context, COMMA) ) return NULL;
         }
-
-        function_decl->last_arg = arg_def;
     }
 
     if ( !matchLiteral(context, OP_ARROW) ) return NULL;
@@ -236,7 +240,7 @@ FunctionDecl* parseFunctionDecl(Context* context)
 
         if ( !matchLiteral(context, OPEN_BRACE ) ) return NULL;
 
-        Binding* binding = NULL;
+        Binding* prev_binding = NULL;
 
         while ( 1 ) 
         {
@@ -255,28 +259,17 @@ FunctionDecl* parseFunctionDecl(Context* context)
             }
 
             if ( temp_binding == NULL ) break;
-            if ( function_decl->first_binding == NULL )
-            {
-                function_decl->first_binding = temp_binding;
-                binding = temp_binding;
-            }
-            else
-            {
-                binding->next = temp_binding;
-                binding = binding->next;
-            }
+            CHAIN_LIST(function_decl->first_binding, prev_binding, temp_binding);
         }
-
-        function_decl->last_binding = binding;
     }
     else
     {
         debugLog(context, "function's result is simple expression");
         //this is an expression in front of `funcName := () ->`
-        ALLOC(binding, Binding);
-        function_decl->last_binding = function_decl->first_binding = binding;
-        function_decl->first_binding->expression = parseExpression(context);
-        function_decl->first_binding->is_return = true;
+        ALLOC(temp_binding, Binding);
+        temp_binding->expression = parseExpression(context);
+        temp_binding->is_return = true;
+        function_decl->first_binding = temp_binding;
     }
 
     return function_decl;
@@ -331,7 +324,7 @@ Binding* parseBinding(Context* context)
 Module* parseModule(Context* context)
 {
     ALLOC(module, Module);
-    Binding* binding;
+    Binding* prev_binding = NULL;
 
     while ( 1 ) 
     {
@@ -341,23 +334,14 @@ Module* parseModule(Context* context)
 
         if ( temp_binding == NULL )
         {
-            module->last_binding = binding;
             return module;
         }
+        if ( prev_binding != NULL ) prev_binding->next = temp_binding;
 
-        if ( module->first_binding == NULL )
-        {
-            module->first_binding = temp_binding;
-            binding = temp_binding;
-        }
-        else
-        {
-            binding->next = temp_binding;
-            binding = binding->next;
-        }
+        SET_IF_NULL(module->first_binding, temp_binding);
+        prev_binding = temp_binding;
     }
 
-    module->last_binding = binding;
     return module;
 }
 

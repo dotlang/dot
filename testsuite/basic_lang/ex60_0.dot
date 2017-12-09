@@ -1,0 +1,20 @@
+main := () -> int
+{
+    assert( add2(10,20) = 30 )
+    assert( add3(1,2,3) = 6 )
+    assert( addIntChar(1,'a') = addIntChar(0, 'b') )
+    assert( add2(10,20) = add3(10,10,10))
+    assert( floatDiv(100,1.9) = add3(40,50,10) )
+
+    :: 0
+}
+
+add2 := (x:int, y:int) -> x+y
+add3 := (x:int, y:int, z:int) -> x+y+z
+addIntChar := (x:int, c: char) -> x+int(c)
+floatDiv := (x:int, y: float) -> int
+{
+    temp1 := int(y)
+    temp2 := x/temp1
+    :: temp2+0
+}
