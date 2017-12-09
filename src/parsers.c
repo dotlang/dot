@@ -162,9 +162,7 @@ Expression* parseExpression(Context* context)
 
         if ( add_node ) 
         {
-            if ( prev_node != NULL ) prev_node->next = temp_node;
-            SET_IF_NULL(expression->first_node, temp_node);
-            prev_node = temp_node;
+            CHAIN_LIST(expression->first_node, prev_node, temp_node);
         }
 
         prev_kind = kind;
@@ -174,10 +172,7 @@ Expression* parseExpression(Context* context)
     ExpressionNode* op_stack_top = (ExpressionNode*)pop(op_stack);
     while ( op_stack_top != NULL )
     {
-        //TODO: use chain list 
-        prev_node->next = op_stack_top;
-        prev_node = prev_node->next;
-
+        CHAIN_LIST(expression->first_node, prev_node, op_stack_top);
         op_stack_top = (ExpressionNode*)pop(op_stack);
     }
 
@@ -216,15 +211,12 @@ FunctionDecl* parseFunctionDecl(Context* context)
         {
             ALLOC(temp_arg_def, ArgDef);
 
-            if ( prev_arg_def != NULL ) prev_arg_def->next = temp_arg_def;
-
             getNextToken(context, temp_arg_def->name);
             if ( !matchLiteral(context, OP_COLON) ) return NULL;
             getNextToken(context, temp_arg_def->type);
 
-            SET_IF_NULL(function_decl->first_arg, temp_arg_def);
+            CHAIN_LIST(function_decl->first_arg, prev_arg_def, temp_arg_def);
             function_decl->arg_count++;
-            prev_arg_def = temp_arg_def;
 
             if ( matchLiteral(context, CLOSE_PAREN) ) break;
             if ( !matchLiteral(context, COMMA) ) return NULL;
@@ -336,10 +328,8 @@ Module* parseModule(Context* context)
         {
             return module;
         }
-        if ( prev_binding != NULL ) prev_binding->next = temp_binding;
 
-        SET_IF_NULL(module->first_binding, temp_binding);
-        prev_binding = temp_binding;
+        CHAIN_LIST(module->first_binding, prev_binding, temp_binding);
     }
 
     return module;

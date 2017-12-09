@@ -14,18 +14,10 @@
                 ALLOC(V, ExpressionNode);\
                 strcpy(V->token, TOKEN);\
                 V->kind = kind
-//TODO: remove this
-#define SET_IF_NULL(DATA, VALUE) if ( DATA == NULL ) DATA=VALUE
 #define CHAIN_LIST(FIELD, PREV, CURR) \
                 if ( FIELD == NULL ) FIELD = CURR;\
                 if ( PREV != NULL ) PREV->next = CURR;\
                 PREV = CURR
-
-/* #define PARSE(R, F) R = F(context); if ( R == NULL ) return NULL */
-/* #define PARSE_ELSE(R, F) R = F(context); if ( R == NULL ) */
-
-/* #define EXPECT(x)     if ( matchLiteral(context, x) == false ) return NULL */
-/* #define IF_MATCH(x)   if ( matchLiteral(context, x) == true ) */
 
 typedef struct
 {
