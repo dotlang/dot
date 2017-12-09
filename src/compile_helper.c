@@ -34,16 +34,24 @@ LLVMTypeRef expressionTypeToLLVMType(char* type)
 
 LLVMTypeRef getFunctionType(Context* context, FunctionDecl* function_decl)
 {
-    ALLOC_ARRAY(args, function_decl->arg_count, LLVMTypeRef);
-
+    int arg_count = 0;
     ArgDef* arg = function_decl->first_arg;
-    for(int i=0;i<function_decl->arg_count;i++)
+    while ( arg != NULL )
+    {
+        arg_count++;
+        arg = arg->next;
+    }
+
+    ALLOC_ARRAY(args, arg_count, LLVMTypeRef);
+
+    arg = function_decl->first_arg;
+    for(int i=0;i<arg_count;i++)
     {
         args[i] = expressionTypeToLLVMType(arg->type);
         arg = arg->next;
     }
 
-    return LLVMFunctionType(expressionTypeToLLVMType(function_decl->output_type), args, function_decl->arg_count, 0);
+    return LLVMFunctionType(expressionTypeToLLVMType(function_decl->output_type), args, arg_count, 0);
 }
 
 

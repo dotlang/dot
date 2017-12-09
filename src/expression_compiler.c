@@ -123,6 +123,8 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
                 char fn_name[128];
                 strcpy(fn_name, node->token);
 
+                //TODO: design a naming convention for functions, so we don't make checks for all types here
+                //just create a function name (rename `int` to `int_f` for example)
                 if ( !strcmp(node->token, "int") )
                 {
                     if ( getType(args[0]) == FLOAT )

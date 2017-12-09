@@ -59,7 +59,7 @@ void dumpExpression(Context* context, Expression* expression)
     {
         if ( node->kind == FN_CALL )
         {
-            debugLogNoNewLine(context, "%s-%d ", node->token, node->arg_count);
+            debugLogNoNewLine(context, "%s() ", node->token);
         }
         else
         {

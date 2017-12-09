@@ -19,7 +19,6 @@ Binding* parseBinding(Context*);
 //f(g(a,b),c,d) will become:
 //a b g2 c d f3
 //maybe we should keep track of fn-calls in the op-stack separately to make increasing op-count for them more efficient
-//TODO: can we simplify this?
 Expression* parseExpression(Context* context)
 {
     ALLOC(expression, Expression);
@@ -27,11 +26,8 @@ Expression* parseExpression(Context* context)
     //TODO: there are a lot of checks that can be done here to make sure exp has correct syntax
     ExpressionNode* prev_node = NULL;
 
-    //TODO: remove
     TokenKind kind = NA;
-    //TODO: replace using prev node
     TokenKind prev_kind = NA;
-    //TODO: remove
     char token[32];
     Stack* fn_stack = new_stack();
     Stack* op_stack = new_stack();
@@ -190,7 +186,7 @@ FunctionDecl* parseFunctionDecl(Context* context)
             getNextToken(context, temp_arg_def->type);
 
             CHAIN_LIST(function_decl->first_arg, prev_arg_def, temp_arg_def);
-            function_decl->arg_count++;
+            /* function_decl->arg_count++; */
 
             if ( matchLiteral(context, CLOSE_PAREN) ) break;
             if ( !matchLiteral(context, COMMA) ) return NULL;
