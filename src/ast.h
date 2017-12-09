@@ -114,9 +114,8 @@ typedef struct
 {
     Binding *first_binding;
     ArgDef *first_arg;
+    //TODO: remove this
     int arg_count;
-    
-    //declared output type
     char output_type[32];
 } FunctionDecl;
 

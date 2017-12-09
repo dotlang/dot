@@ -51,7 +51,7 @@ void compileBinding(Context* context, Binding* binding)
     {
         //we have a named binding which is not returned value
         LLVMValueRef r_value = compileExpression(context, binding->expression);
-        LLVMTypeRef binding_type = getBindingType(binding);
+        LLVMTypeRef binding_type = expressionTypeToLLVMType(binding->decl_type);
         LLVMValueRef alloc_ref = LLVMBuildAlloca(context->builder, binding_type, binding->lhs);
         LLVMBuildStore(context->builder, r_value, alloc_ref);
 
