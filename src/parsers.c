@@ -239,37 +239,35 @@ FunctionDecl* parseFunctionDecl(Context* context)
 
 Binding* parseBinding(Context* context)
 {
+    //IDENTIFIER : TYPE := EXPRESSION
+    //IDENTIFIER := EXPRESSION
+    //EXPRESSION (output should be discarded)
     ALLOC(binding, Binding);
     long start_position = ftell(context->input_file);
 
     getNextToken(context, binding->lhs);
     if ( binding->lhs[0] == 0 ) return NULL;
 
-    if ( getTokenKind(binding->lhs, NA) != IDENTIFIER )
+    if ( getTokenKind(binding->lhs, NA) == IDENTIFIER )
     {
-        errorLog("Invalid binding name: %s\n", binding->lhs);
+        //read the type if it is specified
+        if ( matchLiteral(context, OP_COLON) )
+        {
+            getNextToken(context, binding->decl_type);
+        }
+
+        if ( !matchLiteral(context, OP_BIND) )
+        {
+            //we were wrong from the beginning! this is the third case (only an expression)
+            //seek back
+            fseek(context->input_file, start_position, SEEK_SET);
+            strcpy(binding->lhs, "_");
+            binding->decl_type[0] = 0;
+        }
     }
-
-    debugLog(context, "Parsing binding: %s", binding->lhs);
-
-    //for implicit bindings which result is ignored, we dont have normal pattern (e.g. assert(x) )
-    bool is_explicit = false;
-
-    if ( matchLiteral(context, OP_COLON) )
-    {
-        getNextToken(context, binding->decl_type);
-        is_explicit = true;
-    }
-
-    if ( !matchLiteral(context, OP_BIND) )
-    {
-        //if it's an explicit binding, throw error
-        if ( is_explicit ) errorLog("Invalid binding definition: %s", binding->lhs);
-        //else, it's an explicit binding, restart from beginning and parse it
-        fseek(context->input_file, start_position, SEEK_SET);
-        strcpy(binding->lhs, "_");
-    }
-
+    
+    //now parse what comes after `:=` (or the given text if binding does not have lhs)
+    //there are two cases : function declaration or an expression
     SAVE_POSITION;
     binding->function_decl = parseFunctionDecl(context);
     if ( binding->function_decl == NULL )

@@ -3,7 +3,6 @@
 
 #include "ast.h"
 
-
 //TODO: make this accept var name as input
 #define SAVE_POSITION long initial_position = ftell(context->input_file)
 #define RESTORE_POSITION fseek(context->input_file, initial_position, SEEK_SET)
