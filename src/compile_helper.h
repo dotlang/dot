@@ -5,5 +5,6 @@
 #include "debug_helpers.h"
 
 ExpressionType getType(LLVMValueRef value);
+bool isLiteralKind(TokenKind kind);
 
 #endif

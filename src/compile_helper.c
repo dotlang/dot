@@ -15,3 +15,9 @@ ExpressionType getType(LLVMValueRef value)
     errorLog("Invliad type to get string representation: %s", type_str);
     abort();
 }
+
+bool isLiteralKind(TokenKind kind)
+{
+    return ( kind == INT_LITERAL || kind == BOOL_LITERAL || 
+            kind == FLOAT_LITERAL || kind == CHAR_LITERAL );
+}

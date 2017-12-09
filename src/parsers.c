@@ -6,6 +6,7 @@
 #include "basic_parsers.h"
 #include "debug_helpers.h"
 #include "stack.h"
+#include "compile_helper.h"
 
 Expression* parseExpression(Context*);
 Binding* parseBinding(Context*);
@@ -42,12 +43,7 @@ Expression* parseExpression(Context* context)
         //ignore newLine if it's the first thing we see
         if ( prev_node != NULL && newLineAhead(context) )
         {
-            if ( kind == IDENTIFIER ||
-                 kind == INT_LITERAL ||
-                 kind == FLOAT_LITERAL ||
-                 kind == CHAR_LITERAL ||
-                 kind == BOOL_LITERAL ||
-                 kind == CLOSE_PAREN )
+            if ( kind == IDENTIFIER || isLiteralKind(kind) || kind == CLOSE_PAREN )
             {
                 break;
             }
@@ -59,23 +55,14 @@ Expression* parseExpression(Context* context)
         kind = getTokenKind(token, prev_kind);
         ALLOC_NODE(temp_node, token, kind);
 
-        if ( kind == INT_LITERAL || kind == BOOL_LITERAL || kind == FLOAT_LITERAL || kind == CHAR_LITERAL )
-        {
-            //if token is literal or identifier, just move it to output
-        }
-        else if ( kind == IDENTIFIER )
+        if ( kind == IDENTIFIER )
         {
             if ( matchLiteral(context, OPEN_PAREN) )
             {
                 //add it to stack
                 temp_node->kind = FN_CALL;
 
-                if ( matchLiteral(context, CLOSE_PAREN) )
-                {
-                    //this is a function call without arg
-                    //do not add it to the stack but add to the output
-                }
-                else
+                if ( !matchLiteral(context, CLOSE_PAREN) )
                 {
                     //the function call has at least one arg
                     temp_node->arg_count=1;
@@ -83,10 +70,6 @@ Expression* parseExpression(Context* context)
                     push(fn_stack, temp_node);
                     add_node = false;
                 }
-            }
-            else
-            {
-                //this is a binding name - add to output
             }
         }
         else if ( kind == COMMA )
@@ -111,9 +94,7 @@ Expression* parseExpression(Context* context)
             {
                 if ( op_stack_top->kind == OPEN_PAREN || op_stack_top->kind == FN_CALL ) break;
 
-                prev_node->next = op_stack_top;
-                //TODO: use chain_list
-                prev_node = prev_node->next;
+                CHAIN_LIST(expression->first_node, prev_node, op_stack_top);
                 pop(op_stack);
                 op_stack_top = (ExpressionNode*)peek(op_stack);
             }
@@ -124,14 +105,11 @@ Expression* parseExpression(Context* context)
             if ( op_stack_top->kind == FN_CALL )
             {
                 pop(fn_stack);
-
-                //TODO: use chain_list
-                prev_node->next = op_stack_top;
-                prev_node = prev_node->next;
+                CHAIN_LIST(expression->first_node, prev_node, op_stack_top);
             }
             add_node=false;
         }
-        else //if we see a normal operator
+        else if ( !isLiteralKind(kind) ) //if we see a normal operator
         {
             int prec = getOperatorPrecedence(kind);
 
@@ -148,10 +126,7 @@ Expression* parseExpression(Context* context)
                 if ( stack_prec == prec && !isLeftAssociative(op_stack_top->kind) ) break;
 
                 pop(op_stack);
-                //TODO: use chain list macro
-                prev_node->next = op_stack_top;
-                prev_node = prev_node->next;
-
+                CHAIN_LIST(expression->first_node, prev_node, op_stack_top);
                 op_stack_top = (ExpressionNode*)peek(op_stack);
             }
 
