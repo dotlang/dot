@@ -51,41 +51,36 @@ void debugLogAddNewLine(Context* context)
 
 void dumpExpression(Context* context, Expression* expression)
 {
+    if ( context->debug_mode != 1 ) return;
+    debugLogNoNewLine(context, "Dumping expression: ");
 
+    ExpressionNode* node = expression->first_node;
+    while ( node != NULL ) 
+    {
+        debugLogNoNewLine(context, "%s(%d) ", node->token, node->kind);
+        node = node->next;
+    }
+    debugLog(context, "\n");
 }
 
-/* void debugExpression(Context* context, Expression* expression) */
-/* { */
-/*     if ( context->debug_mode == 0 ) return; */
 
-/*     debugMathExpression(context, expression->math_expression); */
-/* } */
+void errorLog(const char* format, ...)
+{
+	char result[1024];
 
-/* void debugMathExpression(Context* context, MathExpression* math_expression) */
-/* { */
-/*     if ( context->debug_mode == 0 ) return; */
+    /* Declare a va_list type variable */
+    va_list myargs;
 
-/*     debugLogNoNewLine(context, "("); */
-/*     debugMathFactor(context, math_expression->factor); */
+    /* Initialise the va_list variable with the ... after fmt */
+    va_start(myargs, format);
 
-/*     if ( math_expression->expression != NULL ) */
-/*     { */
-/*         debugLogNoNewLine(context, "%c", math_expression->op); */
-/*         debugMathExpression(context, math_expression->expression); */
-/*     } */
+    /* Forward the '...' to vprintf */
+    vsprintf(result, format, myargs);
 
-/*     debugLogNoNewLine(context, ")"); */
-/* } */
+    /* Clean up the va_list */
+    va_end(myargs);
 
-/* void debugMathFactor(Context* context, MathFactor* factor) */
-/* { */
-/*     if ( factor->expression != NULL ) */
-/*     { */
-/*         debugExpression(context, factor->expression); */
-/*     } */
-/*     else */
-/*     { */
-/*         debugLogNoNewLine(context, "%d", factor->number); */
-/*     } */
-/* } */
+	printf("%s\n", result);
+	abort();
+}
 

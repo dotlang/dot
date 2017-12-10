@@ -33,7 +33,7 @@ void checkDebugMode(Context* context)
     }
 }
 
-int openInputFile(Context* context, char* arg)
+bool openInputFile(Context* context, char* arg)
 {
     context->input_file_path = arg;
     debugLog(context, "compiling %s...", context->input_file_path);
@@ -43,10 +43,10 @@ int openInputFile(Context* context, char* arg)
     if ( context->input_file == NULL )
     {
         printf("Could not open input file: %s\n", context->input_file_path);
-        return FAIL;
+        return false;
     }
 
-    return OK;
+    return true;
 }
 
 void prepareOutputLocation(Context* context)
@@ -74,7 +74,7 @@ void generateExecutable(Context* context)
     //compile llvm output to object file
     debugLog(context, "compiling to native executable...");
     char clang_command[1024];
-    sprintf(clang_command, "clang -x ir -o %s %s", context->output_file_path, context->llvmir_file_path);
+    sprintf(clang_command, "clang -x ir -o %s ./src/inc.ll %s", context->output_file_path, context->llvmir_file_path);
     debugLog(context, "compilation command: %s", clang_command);
     system(clang_command);
     debugLog(context, "compilation finished.");
@@ -85,7 +85,7 @@ void cleanupTemps(Context* context)
     debugLog(context, "cleaning up temp files...");
     char cleanup_cmd[1024];
     sprintf(cleanup_cmd, "rm -rf %s", context->llvmir_dir);
-    /* system(cleanup_cmd); */
+    if ( context->debug_mode == 0 ) system(cleanup_cmd);
     debugLog(context, "cleanup finished.");
 }
 
@@ -102,8 +102,8 @@ int main(int argc, char** argv)
 
     checkDebugMode(context);
     
-    int error_code = openInputFile(context, argv[1]);
-    if ( error_code == FAIL ) return 1;
+    bool success = openInputFile(context, argv[1]);
+    if ( success == false ) return 1;
 
     Module* module = parseModule(context);
     fclose(context->input_file);

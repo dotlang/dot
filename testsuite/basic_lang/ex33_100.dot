@@ -1,0 +1,8 @@
+# vi:syntax=python
+
+main := () -> int
+{
+    v10:int := 900000000
+    :: v10/9000000
+}
+

@@ -1,65 +1,97 @@
 #include "compilers.h"
 
-void compileBinding(Context* context, hashtable_t*, Binding* binding);
+void compileBinding(Context* context, Binding* binding);
 
-void compileCodeBlock(Context* context, CodeBlock* code_block)
+void compileFunctionDecl(Context* context, LLVMValueRef function, FunctionDecl* function_decl)
 {
-    struct CodeBlockElement* element = code_block->first_element;
+    ArgDef* current_arg = function_decl->first_arg;
 
-    while ( element != NULL )
+    //clear list of function bindings to prevent name clash between functions
+	context->function_bindings = ht_create(100);
+
+    //first we need to allocate function inputs
+    int i = 0;
+    while ( current_arg != NULL )
     {
-        if ( element->return_expression != NULL )
-        {
-            LLVMValueRef return_exp = compileExpression(context, code_block->last_element->return_expression);
-            LLVMBuildRet(context->builder, return_exp);
-        }
-        else
-        {
-            compileBinding(context, context->function_bindings, element->binding);
-        }
+        LLVMValueRef arg_ref = LLVMGetParam(function, i);
 
-        element = element->next;
+        LLVMTypeRef arg_type = expressionTypeToLLVMType(current_arg->type);
+        LLVMValueRef alloc_ref = LLVMBuildAlloca(context->builder, arg_type, current_arg->name);
+        LLVMBuildStore(context->builder, arg_ref, alloc_ref);
+        ht_set(context->function_bindings, current_arg->name, alloc_ref);
+
+        current_arg = current_arg->next;
+        i++;
     }
+
+    Binding* binding = function_decl->first_binding;
+    while ( binding != NULL )
+    {
+        compileBinding(context, binding);
+        binding = binding->next;
+    }
+
 }
 
-void compileFunctionDecl(Context* context, FunctionDecl* function_decl)
+void compileBinding(Context* context, Binding* binding)
 {
-    if ( function_decl->expression != NULL )
+    if ( binding->is_return )
     {
-        LLVMValueRef return_exp = compileExpression(context, function_decl->expression);
-        LLVMBuildRet(context->builder, return_exp);
+        LLVMValueRef r_value = compileExpression(context, binding->expression);
+        LLVMBuildRet(context->builder, r_value);
     }
-    else
-    {
-        compileCodeBlock(context, function_decl->code_block);
-    }
-}
-
-void compileBinding(Context* context, hashtable_t* storage, Binding* binding)
-{
-    if ( binding->function_decl != NULL )
+    else if ( binding->function_decl != NULL )
     {
         LLVMValueRef mainfunc = LLVMGetNamedFunction(context->module, binding->lhs);
+
         LLVMBasicBlockRef entry = LLVMAppendBasicBlock(mainfunc, "entry");
         LLVMPositionBuilderAtEnd(context->builder, entry);
 
-        compileFunctionDecl(context, binding->function_decl);
+        compileFunctionDecl(context, mainfunc, binding->function_decl);
     }
     else
     {
+        //we have a named binding which is not returned value
         LLVMValueRef r_value = compileExpression(context, binding->expression);
-        LLVMTypeRef int_type = LLVMIntType(32);
-        LLVMValueRef alloc_ref = LLVMBuildAlloca(context->builder, int_type, binding->lhs);
+        LLVMTypeRef binding_type = expressionTypeToLLVMType(binding->decl_type);
+        LLVMValueRef alloc_ref = LLVMBuildAlloca(context->builder, binding_type, binding->lhs);
         LLVMBuildStore(context->builder, r_value, alloc_ref);
 
-        ht_set(storage, binding->lhs, alloc_ref);
+        ht_set(context->function_bindings, binding->lhs, alloc_ref);
     }
 }
 
-void declareFunctionBinding(Context* context, Binding* binding)
+void declareBinding(Context* context, Binding* binding)
 {
-    LLVMTypeRef funcType = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
-    LLVMAddFunction(context->module, binding->lhs, funcType);
+    if ( binding->function_decl != NULL )
+    {
+        LLVMTypeRef func_type = getFunctionType(context, binding->function_decl);
+        LLVMAddFunction(context->module, binding->lhs, func_type);
+    }
+}
+
+void addPredefinedFunctions(Context* context)
+{
+    LLVMTypeRef input_types[] = { LLVMInt1Type() };
+
+    LLVMTypeRef func_type = LLVMFunctionType(LLVMInt64Type(), input_types, 1, 0);
+    LLVMValueRef main_func = LLVMAddFunction(context->module, "bool_to_int", func_type);
+
+    //Cast float to int
+    LLVMTypeRef input_types2[] = { LLVMDoubleType() };
+    func_type = LLVMFunctionType(LLVMInt64Type(), input_types2, 1, 0);
+    main_func = LLVMAddFunction(context->module, "float_to_int", func_type);
+
+    //cast char to int
+    LLVMTypeRef input_types3[] = { LLVMInt8Type() };
+    func_type = LLVMFunctionType(LLVMInt64Type(), input_types3, 1, 0);
+    main_func = LLVMAddFunction(context->module, "char_to_int", func_type);
+
+    //assert function
+    LLVMTypeRef input_types4[] = { LLVMInt1Type() };
+    func_type = LLVMFunctionType(LLVMInt64Type(), input_types4, 1, 0);
+    main_func = LLVMAddFunction(context->module, "assert", func_type);
+
 }
 
 void compileModule(Context* context, Module* m)
@@ -69,19 +101,21 @@ void compileModule(Context* context, Module* m)
     LLVMSetTarget(context->module, LLVMGetDefaultTargetTriple());
     context->builder = LLVMCreateBuilder();
 
-    struct ModuleElement* element = m->first_element;
-    while ( element != NULL && element->binding->function_decl != NULL )
+    Binding* binding = m->first_binding;
+    while ( binding != NULL )
     {
-        declareFunctionBinding(context, element->binding);
-        element = element->next;
+        declareBinding(context, binding);
+        binding = binding->next;
     }
 
-    element = m->first_element;
-    while ( element != NULL )
+    addPredefinedFunctions(context);
+
+    binding = m->first_binding;
+    while ( binding != NULL )
     {
         //for module level bindings we dont need a storage as we can lookup functions using LLVM
-        compileBinding(context, NULL, element->binding);
-        element = element->next;
+        compileBinding(context, binding);
+        binding = binding->next;
     }
 
     char *error = NULL;

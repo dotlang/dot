@@ -1,3 +1,0 @@
-# vi:syntax=python
-# 45
-main := () -> 11+34

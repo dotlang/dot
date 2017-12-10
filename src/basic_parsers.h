@@ -3,12 +3,18 @@
 
 #include "ast.h"
 
-void ignoreWhitespace(Context* context);
-const char* matchLiterals(Context* context, const char** choices, const int);
-bool matchLiteral(Context* context, const char* literal);
-bool matchNumber(Context* context, char* token);
-int parseIdentifier(Context* context, char* token);
-int strToOp(const char* str);
-const char* opToStr(int op);
+//TODO: make this accept var name as input
+#define SAVE_POSITION long initial_position = ftell(context->input_file)
+#define RESTORE_POSITION fseek(context->input_file, initial_position, SEEK_SET)
+
+
+void getNextToken(Context* context, char* token);
+bool newLineAhead(Context* context);
+TokenKind getTokenKind(char* token, TokenKind prev_kind);
+int getOperatorPrecedence(TokenKind kind);
+bool isLeftAssociative(TokenKind kind);
+bool matchLiteral(Context* context, int kind);
+//TODO: temporary to match with type names
+bool matchText(Context* context, const char* text);
 
 #endif

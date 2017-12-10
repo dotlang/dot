@@ -1,3 +1,0 @@
-# vi:syntax=python
-# 21
-main := () -> 12     +                9

@@ -1,0 +1,10 @@
+# vi:syntax=python
+# output should be 19
+main := () -> int
+{
+    test1 := 199 >> 2 #49
+    test2 := 319 >> 4 #19
+    test3 := -100 >> 2 #-25
+    :: test1+test2+test3-10
+}
+

@@ -5,6 +5,7 @@
 
 void debugLog(Context*, const char*, ...);
 void dumpExpression(Context*, Expression*);
+void errorLog(const char* format, ...);
 
 #endif
 
