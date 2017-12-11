@@ -4,11 +4,10 @@ void compileBinding(Context* context, Binding* binding);
 
 void compileFunctionDecl(Context* context, LLVMValueRef function, FunctionDecl* function_decl)
 {
-    ArgDef* current_arg = function_decl->first_arg;
-
     //clear list of function bindings to prevent name clash between functions
 	context->function_bindings = ht_create(100);
 
+    ArgDef* current_arg = function_decl->first_arg;
     //first we need to allocate function inputs
     int i = 0;
     while ( current_arg != NULL )

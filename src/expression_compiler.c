@@ -49,14 +49,12 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
         {
 			LLVMValueRef ptr = (LLVMValueRef)ht_get(context->function_bindings, node->token);
 			//if this is a function level binding, load it's value from stack
-			if ( ptr != NULL )
-            {
-                DO_PUSH(LLVMBuildLoad(context->builder, ptr, ""));
-            }
-            else
+			if ( ptr == NULL )
             {
                 errorLog("Cannot find identifier: %s\n", node->token);
             }
+
+            DO_PUSH(LLVMBuildLoad(context->builder, ptr, ""));
 		}
 		else
 		{
@@ -152,6 +150,7 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
                 struct FunctionArg* prev_item = NULL;
 
                 int remaining_to_pop = 1;
+                int arg_count = 0;
                 while ( remaining_to_pop > 0 ) 
                 {
                     void* data = pop(stack);
@@ -161,6 +160,7 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
                     else
                     {
                         ALLOC(temp_item, struct FunctionArg);
+                        arg_count++;
 
                         temp_item->arg = (LLVMValueRef)data;
                         CHAIN_LIST(arg_list->first_arg, prev_item, temp_item);
@@ -168,21 +168,13 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
                 }
 
                 //now we have all the arguments inside arg_list linked list
-                int arg_count = 0;
-                prev_item = arg_list->first_arg;
-                while ( prev_item != NULL )
-                {
-                    arg_count++;
-                    prev_item = prev_item->next;
-                }
-
                 ALLOC_ARRAY(args, arg_count, LLVMValueRef);
                 
-                prev_item = arg_list->first_arg;
+                struct FunctionArg* current_arg = arg_list->first_arg;
                 for(int i=arg_count-1;i>=0;i--)
                 {
-                    args[i] = prev_item->arg;
-                    prev_item = prev_item->next;
+                    args[i] = current_arg->arg;
+                    current_arg = current_arg->next;
                 }
 
                 char fn_name[128];

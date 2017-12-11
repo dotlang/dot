@@ -64,9 +64,9 @@ TokenKind getTokenKind(char* token, TokenKind prev_kind)
     int len = strlen(token);
     if ( token[0] == '\'') return CHAR_LITERAL;
     if ( len == 1 && token[0] == '(') return OPEN_PAREN;
+    if ( len == 1 && token[0] == ')') return CLOSE_PAREN;
     if ( len == 1 && token[0] == ':') return OP_COLON;;
     if ( len == 1 && token[0] == '=') return OP_EQUALS;;
-    if ( len == 1 && token[0] == ')') return CLOSE_PAREN;
     if ( len == 1 && token[0] == '+') 
     {
         if ( prev_kind == NA || prev_kind == OPEN_PAREN || prev_kind == OPEN_BRACE ) return OP_POS;
@@ -123,9 +123,11 @@ int getOperatorPrecedence(TokenKind kind)
         case OP_SHR: return 10;
         case OP_SHL: return 10;
         case COMMA: return 0;
+        case OPEN_PAREN: return 15;
         case FN_CALL: return 14;
         case FN_CALL_SIMPLE: return 14;
-        default: { errorLog("Aborting! Invalid operator: %d\n", kind); abort(); }
+        //otherwise, this is not an operator
+        default: return -1; 
     }
 }
             
