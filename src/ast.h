@@ -32,7 +32,6 @@ typedef struct
 
     LLVMModuleRef module;
     LLVMBuilderRef builder;
-    //This is a map of non-function bindings defined at module level
     //List of bindings defined inside current function
     hashtable_t* function_bindings;
 } Context;
@@ -84,9 +83,6 @@ typedef struct ExpressionNode
 {
     char token[32];
     TokenKind kind;
-    //only for function call
-    /* int arg_count; */
-
     struct ExpressionNode* next;
 } ExpressionNode;
 

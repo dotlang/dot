@@ -16,5 +16,6 @@ bool isLeftAssociative(TokenKind kind);
 bool matchLiteral(Context* context, int kind);
 //TODO: temporary to match with type names
 bool matchText(Context* context, const char* text);
+bool find_binding(Module* module, char* name);
 
 #endif

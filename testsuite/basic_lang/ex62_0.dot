@@ -5,5 +5,5 @@ main := () -> int
     :: 0
 }
 
-setx := () -> 10
 getx := (x:int) -> x+1
+setx := () -> 10
