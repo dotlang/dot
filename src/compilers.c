@@ -50,6 +50,10 @@ void compileBinding(Context* context, Binding* binding)
     }
     else
     {
+        if ( ht_get(context->function_bindings, binding->lhs) != NULL )
+        {
+            errorLog("Name \"%s\" is already used.", binding->lhs);
+        }
         //we have a named binding which is not returned value
         LLVMValueRef r_value = compileExpression(context, binding->expression);
         LLVMTypeRef binding_type = expressionTypeToLLVMType(binding->decl_type);
