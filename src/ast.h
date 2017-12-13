@@ -33,11 +33,8 @@ typedef struct
     LLVMModuleRef module;
     LLVMBuilderRef builder;
     //This is a map of non-function bindings defined at module level
-    /* hashtable_t* module_value_bindings; */
     //List of bindings defined inside current function
     hashtable_t* function_bindings;
-    char token_cache[256];
-
 } Context;
 
 typedef struct Binding Binding;
