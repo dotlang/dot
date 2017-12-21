@@ -290,7 +290,7 @@ Module* parseModule(Context* context)
         {
             return module;
         }
-        if ( find_binding(module, temp_binding->lhs) )
+        if ( find_binding(module, temp_binding->lhs) && (strcmp(temp_binding->lhs, "_") != 0) )
         {
             errorLog("Name %s is already used.", temp_binding->lhs);
         }
