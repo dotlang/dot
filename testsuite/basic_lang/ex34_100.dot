@@ -1,9 +1,9 @@
 # vi:syntax=python
 
-main := () -> int
+main = () -> int
 {
-    test := 123
-    v10:int := 900000000
+    test = 123
+    v10:int = 900000000
     :: v10/9000000
 }
 

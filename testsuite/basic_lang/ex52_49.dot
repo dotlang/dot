@@ -1,9 +1,9 @@
-main := () -> int
+main = () -> int
 {
-    i := 10
-    j := 20
-    h:bool := i=j
-    c: char := 'a'
-    d: char := '0'
+    i = 10
+    j = 20
+    h:bool = i=?j
+    c: char = 'a'
+    d: char = '0'
     :: int(c)-int(d)
 }

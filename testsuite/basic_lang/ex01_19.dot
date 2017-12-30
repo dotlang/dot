@@ -1,2 +1,2 @@
 #TODO: dsadas
-main := () -> 19
+main = () -> 19

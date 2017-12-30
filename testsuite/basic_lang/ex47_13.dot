@@ -1,10 +1,10 @@
 # vi:syntax=python
 # output should be 19
-main := () -> int
+main = () -> int
 {
-    item1:float := 1.15
-    item2:float := 2.9
-    item3:float := item1 + item2 + 9.0
+    item1:float = 1.15
+    item2:float = 2.9
+    item3:float = item1 + item2 + 9.0
 
     :: int(item3)
 }

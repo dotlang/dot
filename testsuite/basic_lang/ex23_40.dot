@@ -1,10 +1,10 @@
 # vi:syntax=python
-main := () -> int
+main = () -> int
 {
-    test1 := 12+(2*3)+1 #19
-    test2 := 19-1-1-1-1-1-1-1-1-1 #10
-    test3 := test1 + test2 + 1 #30
-    test4 := 3
+    test1 = 12+(2*3)+1 #19
+    test2 = 19-1-1-1-1-1-1-1-1-1 #10
+    test3 = test1 + test2 + 1 #30
+    test4 = 3
     :: test3 - (2*5) + (1+test1) + (test2*test4) - test3
 }
 

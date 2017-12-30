@@ -231,6 +231,12 @@ FunctionDecl* parseFunctionDecl(Context* context)
     return function_decl;
 }
 
+bool parseType(Context* context, char* type)
+{
+    getNextToken(context, type);
+    return true;
+}
+
 Binding* parseBinding(Context* context)
 {
     //IDENTIFIER : TYPE := EXPRESSION
@@ -244,10 +250,11 @@ Binding* parseBinding(Context* context)
 
     if ( getTokenKind(binding->lhs, NA) == IDENTIFIER )
     {
-        //read the type if it is specified
+        //read the type if we have `:` after binding name
         if ( matchLiteral(context, OP_COLON) )
         {
-            getNextToken(context, binding->decl_type);
+            bool result = parseType(context, binding->decl_type);
+            if ( result == false ) return NULL;
         }
 
         if ( !matchLiteral(context, OP_BIND) )

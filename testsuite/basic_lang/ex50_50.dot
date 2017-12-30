@@ -1,11 +1,11 @@
 # vi:syntax=python
 # output should be 19
-main := () -> int
+main = () -> int
 {
-    item1:float := 13.99
-    item2:float := 2.91
-    item3:float := (item1/item2)+(300.5%100.0)-3.1415926535+6.0
-    item4:bool  := true
+    item1:float = 13.99
+    item2:float = 2.91
+    item3:float = (item1/item2)+(300.5%100.0)-3.1415926535+6.0
+    item4:bool  = true
 
     :: int(item3)+25+int(item4)+(2*2*2*2)+(99%14)-1
 }

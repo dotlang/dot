@@ -1,9 +1,9 @@
-main := () -> int
+main = () -> int
 {
-    assert( func1(8) = 9 )
+    assert( func1(8) =? 9 )
 
     :: 0
 }
 
-func1 := (i: int) -> i+1
+func1 = (i: int) -> i+1
 

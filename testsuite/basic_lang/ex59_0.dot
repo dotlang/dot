@@ -1,41 +1,41 @@
-main := () -> int
+main = () -> int
 {
-    fifty := func1(2, '0')
-    assert ( fifty = 50 )
+    fifty = func1(2, '0')
+    assert ( fifty =? 50 )
 
-    twelve := adder(9,3)
-    assert( twelve = 12 )
+    twelve = adder(9,3)
+    assert( twelve =? 12 )
 
-    test := int(func2(3.15))
-    assert( test = 4 )
+    test = int(func2(3.15))
+    assert( test =? 4 )
 
-    ffg := adder( func1(1,'0'), subb(10,9) )
-    assert( ffg = 50 )
+    ffg = adder( func1(1,'0'), subb(10,9) )
+    assert( ffg =? 50 )
 
-    ght := adder(1,2)+1+adder(2,3)+sadder(1,2,3,4)
-    assert ( ght = 19 )
+    ght = adder(1,2)+1+adder(2,3)+sadder(1,2,3,4)
+    assert ( ght =? 19 )
 
     :: 0
 }
 
-func1 := (i: int, c: char) -> int
+func1 = (i: int, c: char) -> int
 {
     :: i + int(c)
 }
 
-func2 := (x: float ) -> float
+func2 = (x: float ) -> float
 {
     :: x + 1.0
 }
 
-adder := (f:int, g:int) -> int
+adder = (f:int, g:int) -> int
 {
     :: f + g
 }
 
-sadder := (gg:int, hh:int, jj:int, pp:int ) -> int
+sadder = (gg:int, hh:int, jj:int, pp:int ) -> int
 {
     :: gg + hh + jj + pp
 }
 
-subb := (o:int, p:int) -> o-p
+subb = (o:int, p:int) -> o-p

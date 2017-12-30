@@ -1,9 +1,9 @@
 # vi:syntax=python
 # output should be 19
-main := () -> int
+main = () -> int
 {
-    item:bool := true
-    item2: bool := false
+    item:bool = true
+    item2: bool = false
     :: int(item2)+int(item)*10
 }
 
