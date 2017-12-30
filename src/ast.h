@@ -84,11 +84,17 @@ typedef struct ExpressionNode
     char token[32];
     TokenKind kind;
     struct ExpressionNode* next;
+
+    //extra fields - to be updated during validation
+    ExpressionType ex_type;
 } ExpressionNode;
 
 typedef struct Expression
 {
     ExpressionNode *first_node;
+
+    //extra fields - to be updated during validation
+    ExpressionType ex_type;
 } Expression;
 
 typedef struct 
@@ -126,6 +132,9 @@ typedef struct Binding
     char decl_type[64];
 
     struct Binding* next;
+
+    //extra fields - to be updated during validation
+    ExpressionType ex_type;
 } Binding;
 
 

@@ -9,6 +9,7 @@
 #include "ast.h"
 #include "debug_helpers.h"
 #include "parsers.h"
+#include "validator.h"
 #include "compilers.h"
 
 void printUsage()
@@ -107,6 +108,8 @@ int main(int argc, char** argv)
 
     Module* module = parseModule(context);
     fclose(context->input_file);
+
+    validateModule(context);
 
     prepareOutputLocation(context);
 
