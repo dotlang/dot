@@ -22,6 +22,8 @@
 typedef struct
 {
     //TODO: why Module* is not part of context?
+    //TODO: bundle everything related to compilation in one struct
+    //and everything about a single compilation module into another
     char* input_file_path;
     char  input_file_name[1024];
     FILE* input_file;

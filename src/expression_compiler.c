@@ -16,6 +16,7 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
     ExpressionNode* node = expression->first_node;
     while ( node != NULL )
     {
+        //TODO: change this to switch
         if ( node->kind == OP_POS ) 
         {
             node = node->next;
@@ -24,6 +25,7 @@ LLVMValueRef compileExpression(Context* context, Expression* expression)
 
         if ( node->kind == INT_LITERAL )
         {
+            //TODO: add a function to convert expressionNode to literal (int, float, bool, ...)
             DO_PUSH(LLVMConstInt(intType, atoi(node->token), true));
         }
         else if ( node->kind == FLOAT_LITERAL )
