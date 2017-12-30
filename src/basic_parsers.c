@@ -281,15 +281,3 @@ void getNextToken(Context* context, char* token)
     }
 }
 
-bool find_binding(Module* module, char* name)
-{
-    Binding* current = module->first_binding;
-
-    while ( current != NULL )
-    {
-        if ( !strcmp(current->lhs, name) ) return true;
-        current = current->next;
-    }
-
-    return false;
-}

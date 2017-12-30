@@ -21,6 +21,7 @@
 
 typedef struct
 {
+    //TODO: why Module* is not part of context?
     char* input_file_path;
     char  input_file_name[1024];
     FILE* input_file;

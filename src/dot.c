@@ -109,7 +109,7 @@ int main(int argc, char** argv)
     Module* module = parseModule(context);
     fclose(context->input_file);
 
-    validateModule(context);
+    validateModule(context, module);
 
     prepareOutputLocation(context);
 
