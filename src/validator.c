@@ -1,8 +1,8 @@
 #include "validator.h"
 
-bool findBinding(Module* module, Binding* target)
+bool _findBinding(Binding* start, Binding* target)
 {
-    Binding* current = module->first_binding;
+    Binding* current = start;
 
     while ( current != target && current != NULL )
     {
@@ -13,22 +13,45 @@ bool findBinding(Module* module, Binding* target)
     return false;
 }
 
-void validateModule(Context* context, Module* module)
+void _validateUniqueBindingNames(Binding* start)
 {
-    Binding* current = module->first_binding;
+    Binding* current = start;
 
     while ( current != NULL )
     {
-        //TODO: extract this as a method
-        if ( strcmp(current->lhs, "-") != 0 && findBinding(module, current) )
+        if ( strcmp(current->lhs, "_") != 0 && _findBinding(start, current) )
         {
             errorLog("Name %s is already used.", current->lhs);
         }
 
-        //TODO: do this validation for function bindings' internal bindings
-        //TODO: extract types for all bindings and expressions
-        //TODO: validate type match for expressions (follow compiler steps but check types e.g. shl for float is invalid)
+        current = current->next;
+    }
+}
+
+void _validateUniqueBindingNamesInFunctions(Binding* module_start)
+{
+    Binding* current = module_start;
+
+    while ( current != NULL )
+    {
+        if ( current->function_decl != NULL )
+        {
+            _validateUniqueBindingNames(current->function_decl->first_binding);
+        }
 
         current = current->next;
     }
+}
+
+void validateModule(Context* context, Module* module)
+{
+    _validateUniqueBindingNames(module->first_binding);
+    _validateUniqueBindingNamesInFunctions(module->first_binding);
+
+
+    /*     //TODO: extract types for all bindings and expressions */
+    /*     //TODO: validate type match for expressions (follow compiler steps but check types e.g. shl for float is invalid) */
+
+    /*     current = current->next; */
+    /* } */
 }
