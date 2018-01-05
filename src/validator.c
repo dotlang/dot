@@ -43,15 +43,17 @@ void _validateUniqueBindingNamesInFunctions(Binding* module_start)
     }
 }
 
+void _extractBindingTypes(Module* module)
+{
+}
+
 void validateModule(Context* context, Module* module)
 {
     _validateUniqueBindingNames(module->first_binding);
     _validateUniqueBindingNamesInFunctions(module->first_binding);
+    _extractBindingTypes(module);
 
 
     /*     //TODO: extract types for all bindings and expressions */
     /*     //TODO: validate type match for expressions (follow compiler steps but check types e.g. shl for float is invalid) */
-
-    /*     current = current->next; */
-    /* } */
 }
