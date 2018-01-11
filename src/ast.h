@@ -82,6 +82,15 @@ typedef enum
     OP_COLON
 } TokenKind;
 
+typedef struct FunctionArgList
+{
+    struct FunctionArg
+    {
+        LLVMValueRef arg;
+        struct FunctionArg* next;
+    } *first_arg;
+} FunctionArgList;
+
 typedef struct ExpressionNode
 {
     char token[32];
@@ -139,16 +148,6 @@ typedef struct Binding
     //extra fields - to be updated during validation
     ExpressionType ex_type;
 } Binding;
-
-
-typedef struct FunctionArgList
-{
-    struct FunctionArg
-    {
-        LLVMValueRef arg;
-        struct FunctionArg* next;
-    } *first_arg;
-} FunctionArgList;
 
 
 #endif
