@@ -1,6 +1,6 @@
 main = () -> int
 {
-    assert ( getx(setx()) =? 11 )
+    assert ( getx(setx()) == 11 )
 
     :: 0
 }

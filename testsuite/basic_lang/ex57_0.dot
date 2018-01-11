@@ -1,6 +1,6 @@
 main = () -> int
 {
-    assert( func1(8) =? 9 )
+    assert( func1(8) == 9 )
 
     :: 0
 }

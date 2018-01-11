@@ -1,8 +1,8 @@
 main = () -> int
 {
-    assert( func1() =? 'a' )
-    assert( func2() =? 6.0 )
-    assert( func3() =? true )
+    assert( func1() == 'a' )
+    assert( func2() == 6.0 )
+    assert( func3() == true )
 
     :: 0
 }

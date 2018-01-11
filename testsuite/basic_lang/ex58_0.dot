@@ -1,11 +1,11 @@
 main = () -> int
 {
-    assert( func1(8) =? 9 )
-    assert( func2(3.99) =? 3 )
-    assert( func3('a') =? 97 )
-    assert( adder(1,2) =? 3 )
-    assert( subb(10,3) =? 7)
-    assert( subb(30, 40) =? -10)
+    assert( func1(8) == 9 )
+    assert( func2(3.99) == 3 )
+    assert( func3('a') == 97 )
+    assert( adder(1,2) == 3 )
+    assert( subb(10,3) == 7)
+    assert( subb(30, 40) == -10)
 
     :: 0
 }

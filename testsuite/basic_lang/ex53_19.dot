@@ -2,8 +2,8 @@ main = () -> int
 {
     t = 10
     x = 10
-    assert(t =? x)
-    assert('a' =? 'a')
-    assert(2.9 =? 2.9)
+    assert(t == x)
+    assert('a' == 'a')
+    assert(2.9 == 2.9)
     :: 19
 }

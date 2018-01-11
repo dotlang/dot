@@ -4,9 +4,9 @@ main = () -> int
     
     right = floatDiv(setx(), 100.0/3.0) + megaAdd(add3(1,1,1), add3(1,1,1), add3(1,1,1), add3(1,1,1), add3(1,1,1), add3(1,1,1), add3(1,1,1))
     
-    assert ( left =? 124)
-    assert ( right =? 21 )
-    assert ( left =? right + (5*right) - 2 )
+    assert ( left == 124)
+    assert ( right == 21 )
+    assert ( left == right + (5*right) - 2 )
 
     :: 0
 }
