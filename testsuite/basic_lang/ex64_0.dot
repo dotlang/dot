@@ -1,0 +1,12 @@
+main = () -> int
+{
+    assert ( f1(f2(f3(f4(10)))) == f5(10) )
+
+    :: 0
+}
+
+f1 = (x:int) -> x+1
+f2 = (x:int) -> x+1
+f3 = (x:int) -> x+1
+f4 = (x:int) -> x+1
+f5 = (x:int) -> x+4

@@ -1,0 +1,21 @@
+main = () -> int
+{
+    assert( add(10,4) == div(28,2))    
+    assert( sub(10,2) == mul(2, 4))
+    assert( shr(64, 1) == 32 )
+    assert( shl(2, 2) == add(1, add(1, mul(2,3))))
+    assert( divf(7.0,2.0) == 3.5 )
+
+    :: 0
+}
+
+add = (x:int, y:int) -> x+y
+sub = (x:int,y:int) -> x-y
+mul = (x:int,y:int) -> x*y
+div = (x:int, y:int) -> x/y
+divf = (x:float, y:float) -> float
+{
+    :: x/y
+}
+shr = (x:int, y:int) -> x>>y
+shl = (x:int, y:int) -> x<<y
