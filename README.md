@@ -10,3 +10,13 @@ Features included:
 - Return basic math expressions as result of a function 
 - Expressions can include other bindings, function calls and basic math operators
 
+
+## How to compile?
+
+On a fresh Ubuntu installation you will need to install below before you can compile the code:
+
+- llvm
+- llvm-dev
+- clang
+
+Then you can run `x.sh` to compile the compiler and run tests.
