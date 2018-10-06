@@ -165,7 +165,7 @@ bool matchLiteral(Context* context, int kind)
 
     if ( token[0] == 0 ) return false;
 
-    bool result = (getTokenKind(token, NA) == kind);
+    bool result = ((int)getTokenKind(token, NA) == kind);
 
     if ( !result )
     {
