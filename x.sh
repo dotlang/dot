@@ -88,3 +88,9 @@ echo
 echo "Total time: ${runtime}ms"
 echo -e "$success_count test(s) passed, $fail_count test(s) failed"
 echo 
+
+if [ "$fail_count" -eq "0" ]; then
+    exit 0
+else
+    exit 1
+fi
