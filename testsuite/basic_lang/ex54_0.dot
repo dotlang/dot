@@ -1,17 +1,17 @@
-main := () -> int
+main = () -> int
 {
-    assert( func1() = func2() )
-    assert( func3() = func2()+10 )
+    assert( func1() == func2() )
+    assert( func3() == func2()+10 )
 
     :: 0
 }
 
-func1 := () -> 20
-func2 := () -> 30-10
+func1 = () -> 20
+func2 = () -> 30-10
 
-func3 := () -> int
+func3 = () -> int
 {
-    g := 10
-    h := 20
+    g = 10
+    h = 20
     :: g+h
 }

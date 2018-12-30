@@ -64,9 +64,10 @@ TokenKind getTokenKind(char* token, TokenKind prev_kind)
     int len = strlen(token);
     if ( token[0] == '\'') return CHAR_LITERAL;
     if ( len == 1 && token[0] == '(') return OPEN_PAREN;
-    if ( len == 1 && token[0] == ':') return OP_COLON;;
-    if ( len == 1 && token[0] == '=') return OP_EQUALS;;
     if ( len == 1 && token[0] == ')') return CLOSE_PAREN;
+    if ( len == 1 && token[0] == ':') return OP_COLON;;
+    if ( len == 1 && token[0] == '=' )  return OP_BIND;
+    if ( len == 2 && token[0] == '=' && token[1] == '=' ) return OP_EQUALS;;
     if ( len == 1 && token[0] == '+') 
     {
         if ( prev_kind == NA || prev_kind == OPEN_PAREN || prev_kind == OPEN_BRACE ) return OP_POS;
@@ -88,7 +89,6 @@ TokenKind getTokenKind(char* token, TokenKind prev_kind)
     if ( len == 1 && token[0] == '}') return CLOSE_BRACE;
     if ( len == 1 && token[0] == ',') return COMMA;
     if ( len == 2 && token[0] == '%' && token[1] == '%' )  return OP_DVT;
-    if ( len == 2 && token[0] == ':' && token[1] == '=' )  return OP_BIND;
     if ( len == 2 && token[0] == ':' && token[1] == ':' )  return OP_RETURN;
     if ( len == 2 && token[0] == '-' && token[1] == '>' )  return OP_ARROW;
     if ( len == 2 && token[0] == '>' && token[1] == '>' )  return OP_SHR;
@@ -123,9 +123,11 @@ int getOperatorPrecedence(TokenKind kind)
         case OP_SHR: return 10;
         case OP_SHL: return 10;
         case COMMA: return 0;
+        case OPEN_PAREN: return 15;
         case FN_CALL: return 14;
         case FN_CALL_SIMPLE: return 14;
-        default: { errorLog("Aborting! Invalid operator: %d\n", kind); abort(); }
+        //otherwise, this is not an operator
+        default: return -1; 
     }
 }
             
@@ -177,7 +179,7 @@ bool matchLiteral(Context* context, int kind)
 
 void getNextToken(Context* context, char* token)
 {
-    const char* complex_ops[] = { "%%", ":=", "::", "->", ">>", "<<"};
+    const char* complex_ops[] = { "%%", "==", "::", "->", ">>", "<<"};
     const char* simple_ops = "<>=+-*/()[],{}:%";
 
     while ( 1 ) 
@@ -223,6 +225,7 @@ void getNextToken(Context* context, char* token)
 
         if ( c == '\'')
         {
+            //char literal
             c = getChar(context);
             token[0] = '\'';
             token[1] = c;
@@ -234,9 +237,9 @@ void getNextToken(Context* context, char* token)
             return;
         }
 
-        //check for number literals
         if ( isdigit(c) )
         {
+            //check for number literals
             int len = 0;
             bool saw_dot = false;
             while ( isdigit(c) || c == '.' )
@@ -263,6 +266,7 @@ void getNextToken(Context* context, char* token)
 
         if ( isalpha(c) )
         {
+            //identifier
             int len = 0;
             while ( c != EOF && isalnum(c) )
             {
@@ -276,3 +280,4 @@ void getNextToken(Context* context, char* token)
         }
     }
 }
+

@@ -4,11 +4,10 @@ void compileBinding(Context* context, Binding* binding);
 
 void compileFunctionDecl(Context* context, LLVMValueRef function, FunctionDecl* function_decl)
 {
-    ArgDef* current_arg = function_decl->first_arg;
-
     //clear list of function bindings to prevent name clash between functions
 	context->function_bindings = ht_create(100);
 
+    ArgDef* current_arg = function_decl->first_arg;
     //first we need to allocate function inputs
     int i = 0;
     while ( current_arg != NULL )
@@ -39,6 +38,7 @@ void compileBinding(Context* context, Binding* binding)
     {
         LLVMValueRef r_value = compileExpression(context, binding->expression);
         LLVMBuildRet(context->builder, r_value);
+        debugLog(context, "%s compiled as a ret-exp binding.", binding->lhs);
     }
     else if ( binding->function_decl != NULL )
     {
@@ -48,16 +48,27 @@ void compileBinding(Context* context, Binding* binding)
         LLVMPositionBuilderAtEnd(context->builder, entry);
 
         compileFunctionDecl(context, mainfunc, binding->function_decl);
+        debugLog(context, "%s compiled as a function binding.", binding->lhs);
     }
     else
     {
+        if ( strcmp(binding->lhs, "_") != 0 && ht_get(context->function_bindings, binding->lhs) != NULL )
+        {
+            errorLog("Name \"%s\" is already used.", binding->lhs);
+        }
         //we have a named binding which is not returned value
         LLVMValueRef r_value = compileExpression(context, binding->expression);
         LLVMTypeRef binding_type = expressionTypeToLLVMType(binding->decl_type);
         LLVMValueRef alloc_ref = LLVMBuildAlloca(context->builder, binding_type, binding->lhs);
         LLVMBuildStore(context->builder, r_value, alloc_ref);
 
-        ht_set(context->function_bindings, binding->lhs, alloc_ref);
+        //if binding name is `_` you can simply ignore the output
+        if (strcmp(binding->lhs, "_") != 0 )
+        {
+            ht_set(context->function_bindings, binding->lhs, alloc_ref);
+        }
+        
+        debugLog(context, "%s compiled as a non-ret expression binding.", binding->lhs);
     }
 }
 

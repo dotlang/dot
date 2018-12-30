@@ -1,8 +1,8 @@
 # vi:syntax=python
 # output should be 19
-main := () -> int
+main = () -> int
 {
-    test3 := -100 + 200
+    test3 = -100 + 200
     :: test3-98
 }
 

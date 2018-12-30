@@ -1,2 +1,2 @@
 # vi:syntax=python
-main := () -> 12+29
+main = () -> 12+29

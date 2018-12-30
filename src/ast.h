@@ -21,6 +21,9 @@
 
 typedef struct
 {
+    //TODO: why Module* is not part of context?
+    //TODO: bundle everything related to compilation in one struct
+    //and everything about a single compilation module into another
     char* input_file_path;
     char  input_file_name[1024];
     FILE* input_file;
@@ -32,12 +35,8 @@ typedef struct
 
     LLVMModuleRef module;
     LLVMBuilderRef builder;
-    //This is a map of non-function bindings defined at module level
-    /* hashtable_t* module_value_bindings; */
     //List of bindings defined inside current function
     hashtable_t* function_bindings;
-    char token_cache[256];
-
 } Context;
 
 typedef struct Binding Binding;
@@ -83,19 +82,31 @@ typedef enum
     OP_COLON
 } TokenKind;
 
+typedef struct FunctionArgList
+{
+    struct FunctionArg
+    {
+        LLVMValueRef arg;
+        struct FunctionArg* next;
+    } *first_arg;
+} FunctionArgList;
+
 typedef struct ExpressionNode
 {
     char token[32];
     TokenKind kind;
-    //only for function call
-    /* int arg_count; */
-
     struct ExpressionNode* next;
+
+    //extra fields - to be updated during validation
+    ExpressionType ex_type;
 } ExpressionNode;
 
 typedef struct Expression
 {
     ExpressionNode *first_node;
+
+    //extra fields - to be updated during validation
+    ExpressionType ex_type;
 } Expression;
 
 typedef struct 
@@ -133,17 +144,10 @@ typedef struct Binding
     char decl_type[64];
 
     struct Binding* next;
+
+    //extra fields - to be updated during validation
+    ExpressionType ex_type;
 } Binding;
-
-
-typedef struct FunctionArgList
-{
-    struct FunctionArg
-    {
-        LLVMValueRef arg;
-        struct FunctionArg* next;
-    } *first_arg;
-} FunctionArgList;
 
 
 #endif

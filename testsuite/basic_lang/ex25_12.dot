@@ -1,11 +1,11 @@
 # vi:syntax=python
 
-main := () -> int
+main = () -> int
 {
     :: otherMain()+2
 }
 
-otherMain := () -> int
+otherMain = () -> int
 {
     :: 10
 }

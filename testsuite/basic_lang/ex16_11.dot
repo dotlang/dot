@@ -1,2 +1,2 @@
 # vi:syntax=python
-main := () -> (10-2)+3
+main = () -> (10-2)+3

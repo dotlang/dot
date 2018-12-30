@@ -1,25 +1,25 @@
 # vi:syntax=python
 
-main := () -> int
+main = () -> int
 {
     :: (betha()/2)+80
 }
 
-betha := () -> int
+betha = () -> int
 {
 #this will return 38
-    ddd := 3
+    ddd = 3
     :: (2+gamma()+20)+alpha()+ddd-3
 }
 
-alpha := () -> int
+alpha = () -> int
 {
     #this will return 3
     :: 11-(2*(1+(39/gamma())))
 }
 
 
-gamma := 
+gamma = 
 () -> 
 int
 {

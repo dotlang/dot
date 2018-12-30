@@ -31,13 +31,11 @@ Expression* parseExpression(Context* context)
     char token[32];
     //used to keep track of the current function call, to update it's argument count
     //process(1,2,3)
-    //TODO: can we eliminate fn_stack and add a marker instead?
     //when we see process( we add a marker to mark start of an arg-list
     //when we see ) we insert function name to call
-    /* Stack* fn_stack = new_stack(); */
     Stack* op_stack = new_stack();
 
-    //f(1,2,3,4)
+    //f(1,2,3,4) becomes:
     //1 2 , 3 , 4 , f
     //we can think of comma as an operator
     while ( 1 )
@@ -63,33 +61,19 @@ Expression* parseExpression(Context* context)
         {
             if ( matchLiteral(context, OPEN_PAREN) )
             {
-                //assume function has no parameter to send
-                temp_node->kind = FN_CALL_SIMPLE;
 
-                if ( !matchLiteral(context, CLOSE_PAREN) )
+                if ( matchLiteral(context, CLOSE_PAREN) )
+                {
+                    temp_node->kind = FN_CALL_SIMPLE;
+                }
+                else 
                 {
                     temp_node->kind = FN_CALL;
                     //the function call has at least one arg
-                    /* temp_node->arg_count=1; */
                     push(op_stack, temp_node);
-                    /* push(fn_stack, temp_node); */
                     add_node = false;
                 }
             }
-        }
-        /* else if ( kind == COMMA ) */
-        /* { */
-        /*     /1* ((ExpressionNode*)peek(fn_stack))->arg_count++; *1/ */
-        /*     /1* add_node=false; *1/ */
-        /* } */
-        else if ( kind == OPEN_PAREN )
-        {
-            //use kind for all comparisons, not token
-            //if token is "(" push it into stack
-            ALLOC_NODE(lpar, token, kind);
-
-            push(op_stack, lpar);
-            add_node=false;
         }
         else if ( kind == CLOSE_PAREN )
         {
@@ -109,16 +93,18 @@ Expression* parseExpression(Context* context)
 
             if ( op_stack_top->kind == FN_CALL )
             {
-                /* pop(fn_stack); */
                 CHAIN_LIST(expression->first_node, prev_node, op_stack_top);
             }
             add_node=false;
         }
-        else if ( !isLiteralKind(kind) ) //if we see a normal operator (including comma)
-        {
-            int prec = getOperatorPrecedence(kind);
 
-            //pop every operator in the op_stack which has lowe precedence or has same precedence and it left associative
+
+        //otherwise check if this is an operator, if it is treat it differently
+        int prec = getOperatorPrecedence(kind);
+
+        if ( prec != -1 )
+        {
+            //pop every operator in the op_stack which has lower precedence or has same precedence and it left associative
             //until you see an opening parenthesis (or fn_call which implied opening parenthesis)
             ExpressionNode* op_stack_top = (ExpressionNode*)peek(op_stack);
             while ( op_stack_top != NULL )
@@ -245,6 +231,12 @@ FunctionDecl* parseFunctionDecl(Context* context)
     return function_decl;
 }
 
+bool parseType(Context* context, char* type)
+{
+    getNextToken(context, type);
+    return true;
+}
+
 Binding* parseBinding(Context* context)
 {
     //IDENTIFIER : TYPE := EXPRESSION
@@ -258,10 +250,11 @@ Binding* parseBinding(Context* context)
 
     if ( getTokenKind(binding->lhs, NA) == IDENTIFIER )
     {
-        //read the type if it is specified
+        //read the type if we have `:` after binding name
         if ( matchLiteral(context, OP_COLON) )
         {
-            getNextToken(context, binding->decl_type);
+            bool result = parseType(context, binding->decl_type);
+            if ( result == false ) return NULL;
         }
 
         if ( !matchLiteral(context, OP_BIND) )

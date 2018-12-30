@@ -1,8 +1,8 @@
 # vi:syntax=python
 # output should be 19
-main := () -> int
+main = () -> int
 {
-    item:bool := false
+    item:bool = false
     :: int(item)
 }
 

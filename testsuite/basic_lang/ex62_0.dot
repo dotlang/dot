@@ -1,0 +1,9 @@
+main = () -> int
+{
+    assert ( getx(setx()) == 11 )
+
+    :: 0
+}
+
+getx = (x:int) -> x+1
+setx = () -> 10

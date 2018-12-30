@@ -1,23 +1,23 @@
-main := () -> int
+main = () -> int
 {
-    assert( func1() = 'a' )
-    assert( func2() = 6.0 )
-    assert( func3() = true )
+    assert( func1() == 'a' )
+    assert( func2() == 6.0 )
+    assert( func3() == true )
 
     :: 0
 }
 
-func1 := () -> char
+func1 = () -> char
 {
     :: 'a'
 }
 
-func2 := () -> float
+func2 = () -> float
 {
     :: 3.1 + 2.9
 }
 
-func3 := () -> bool
+func3 = () -> bool
 {
     :: true
 }

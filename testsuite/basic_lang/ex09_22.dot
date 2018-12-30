@@ -1,2 +1,2 @@
 # vi:syntax=python
-main := () -> (100-80)+2
+main = () -> (100-80)+2

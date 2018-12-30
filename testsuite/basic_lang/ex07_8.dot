@@ -1,2 +1,2 @@
 # vi:syntax=python
-main := () -> 16/2
+main = () -> 16/2

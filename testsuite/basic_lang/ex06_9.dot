@@ -1,2 +1,2 @@
 # vi:syntax=python
-main := () -> 3*3
+main = () -> 3*3

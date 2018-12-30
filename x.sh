@@ -2,8 +2,9 @@
 
 if [ -z "$0" ]; then
     echo "Usage: x.sh [name args]"
-    echo "    name will run that specific test"
+    echo "    name: will run that specific test file"
     echo "    args will be passed to the compiler"
+    echo "Example: ./x.sh t/ex01_19.dot"
     exit
 fi
 

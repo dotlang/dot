@@ -1,8 +1,8 @@
 # vi:syntax=python
 
-main := () -> int
+main = () -> int
 {
-    vv := (12/12)
+    vv = (12/12)
     :: vv
 }
 
