@@ -13,11 +13,12 @@ rm -rf build
 mkdir build
 # -g to generate debug info
 clang++ -Werror -std=c11  `llvm-config --cflags` -g -x c -I src src/*.c `llvm-config --ldflags --libs core analysis native bitwriter --system-libs` -O0 -lm -o ./build/dot
+
 compile_result=$?
 if [ $compile_result -ne "0" ]; then
+    echo "Error during compilation, exiting..."
     exit
 fi
-
 
 success_count=0
 fail_count=0
@@ -83,6 +84,14 @@ fi
 
 end=$(millis)
 runtime=$(((end-start)))
+
 echo
 echo "Total time: ${runtime}ms"
 echo -e "$success_count test(s) passed, $fail_count test(s) failed"
+echo 
+
+if [ "$fail_count" -eq "0" ]; then
+    exit 0
+else
+    exit 1
+fi

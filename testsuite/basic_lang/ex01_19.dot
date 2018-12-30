@@ -1,6 +1,2 @@
-<<<<<<< Updated upstream
 #TODO: dsadas
 main = () -> 19
-=======
-main = ( -> 19 )
->>>>>>> Stashed changes
