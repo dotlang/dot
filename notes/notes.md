@@ -18,6 +18,7 @@ For now, in order to set up the compiler you need to:
 3. Install lld via `sudo apt-get install lld`
 
 
-Another option was to use golang's toolchain (link, asm, ...) but they are not standard assembler and are too tightly coupled to the way go compiler workd (quote: `The problem is that the Go compiler does not generate actual assembly. It generates something that looks a lot like assembly but contains a lot of pseudo-instructions that will be expanded by the linker.` https://stackoverflow.com/questions/23789951/easy-to-read-golang-assembly-output)
+Idea: Another option was to use golang's toolchain (link, asm, ...) but they are not standard assembler and are too tightly coupled to the way go compiler workd (quote: `The problem is that the Go compiler does not generate actual assembly. It generates something that looks a lot like assembly but contains a lot of pseudo-instructions that will be expanded by the linker.` https://stackoverflow.com/questions/23789951/easy-to-read-golang-assembly-output)
 
 Idea: As discussed [here](https://docs.google.com/document/d/1D13QhciikbdLtaI67U6Ble5d_1nsI4befEd6_k1z91U/view) it may be worth having our own object file format. In this case we can have some optimizations to have a better linker. TinyCC has its own assembler and linker. So does golang.
+
