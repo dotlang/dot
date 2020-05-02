@@ -16,3 +16,6 @@ For now, in order to set up the compiler you need to:
 1. Clone this repository
 2. Install nasm via `sudo apt-get install nasm`
 3. Install lld via `sudo apt-get install lld`
+
+
+Another option was to use golang's toolchain (link, asm, ...) but they are not standard assembler and are too tightly coupled to the way go compiler workd (quote: `The problem is that the Go compiler does not generate actual assembly. It generates something that looks a lot like assembly but contains a lot of pseudo-instructions that will be expanded by the linker.` https://stackoverflow.com/questions/23789951/easy-to-read-golang-assembly-output)
